@@ -23,6 +23,12 @@ export default function Navbar() {
               <ShoppingBag size={18} />
               <span>Cart</span>
             </Link>
+            <Link href="/login" className="text-sm text-rose hover:text-rose-light transition-colors">
+              Sign In
+            </Link>
+            <Link href="/maker/signup" className="btn-primary text-xs py-2 px-4">
+              Sell on Floggers
+            </Link>
           </div>
 
           <button onClick={() => setOpen(!open)} className="md:hidden text-noir-300 hover:text-noir-50">
