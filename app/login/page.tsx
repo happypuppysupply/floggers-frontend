@@ -52,7 +52,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={form.password}
-                  onChange={e => setForm({ ...form, password: *** })}
+                  onChange={e => setForm({ ...form, password: e.target.value })} 
                   className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50 pr-10"
                   placeholder="••••••••"
                 />
