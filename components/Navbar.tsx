@@ -49,6 +49,7 @@ export default function Navbar() {
           </Link>
           <Link href="/sell" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Why Sell on Floggers</Link>
           <Link href="/login" onClick={() => setOpen(false)} className="block text-rose hover:text-rose-light py-2">Sign In</Link>
+          <Link href="/maker/signup" onClick={() => setOpen(false)} className="block btn-primary text-center text-xs py-2.5 mt-2">Sell on Floggers</Link>
         </div>
       )}
     </nav>

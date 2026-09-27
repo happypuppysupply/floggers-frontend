@@ -1,35 +1,39 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Shield, Truck, Lock, Users } from 'lucide-react'
+import { ArrowRight, Shield, Truck, Lock, Users, Flame } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
 import CategoryCard from '@/components/CategoryCard'
 import { products, categories, makers } from '@/lib/mockData'
 
 export default function Home() {
-  const featuredProducts = products.filter(p => p.badge || p.rating >= 4.8).slice(0, 6)
+  const floggerProducts = products.filter(p => p.category === 'floggers').slice(0, 4)
   const featuredMakers = makers.filter(m => m.featured).slice(0, 3)
 
   return (
     <div>
-      {/* Hero */}
+      {/* Hero — Floggers Focused */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-rose-dark/20 via-noir-950 to-noir-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-rose-dark/30 via-noir-950 to-noir-950" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="max-w-2xl">
-            <p className="text-xs uppercase tracking-[0.3em] text-rose-muted mb-6">Discover Independent Makers</p>
+            <div className="inline-flex items-center gap-2 bg-rose-dark/20 border border-rose-dark/30 rounded-full px-3 py-1 mb-6">
+              <Flame size={14} className="text-rose" />
+              <span className="text-xs text-rose-light">The #1 Flogger Marketplace</span>
+            </div>
             <h1 className="font-serif italic text-5xl md:text-6xl lg:text-7xl text-noir-50 leading-[1.1] mb-6">
-              Crafted for<br />the lifestyle.
+              Floggers, <br />
+              <span className="text-rose">crafted.</span>
             </h1>
             <p className="text-noir-300 text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
-              Floggers is the marketplace where independent BDSM artisans connect with people who value quality, discretion, and craft.
+              The premier marketplace for handcrafted floggers, paddles, crops, and artisan BDSM gear. Independent makers. Verified quality. Discreet always.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/category" className="btn-primary inline-flex items-center gap-2">
-                Browse the Marketplace <ArrowRight size={18} />
+              <Link href="/category?cat=floggers" className="btn-primary inline-flex items-center gap-2">
+                Shop Floggers <ArrowRight size={18} />
               </Link>
-              <Link href="/makers" className="btn-secondary inline-flex items-center gap-2">
-                Meet the Makers
+              <Link href="/category" className="btn-secondary inline-flex items-center gap-2">
+                Browse All Gear
               </Link>
             </div>
           </div>
@@ -58,8 +62,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Featured Floggers */}
       <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Floggers</h2>
+              <p className="text-sm text-noir-400">Hand-picked by our community — crafted by independent makers</p>
+            </div>
+            <Link href="/category?cat=floggers" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
+              View All <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {floggerProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section className="py-20 bg-noir-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <h2 className="font-serif italic text-3xl text-noir-50">Shop by Category</h2>
@@ -70,26 +94,6 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {categories.map((cat, i) => (
               <CategoryCard key={cat.id} category={cat} large={i < 2} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="py-20 bg-noir-900/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Products</h2>
-              <p className="text-sm text-noir-400">Hand-picked by our community</p>
-            </div>
-            <Link href="/category" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
-              Browse All <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
@@ -139,9 +143,14 @@ export default function Home() {
             <p className="relative text-noir-300 mb-8 max-w-md mx-auto">
               Explore hundreds of handcrafted products from verified independent makers in the community.
             </p>
-            <Link href="/category" className="relative btn-primary inline-flex items-center gap-2">
-              Start Browsing <ArrowRight size={18} />
-            </Link>
+            <div className="relative flex flex-wrap justify-center gap-4">
+              <Link href="/category?cat=floggers" className="btn-primary inline-flex items-center gap-2">
+                Shop Floggers <ArrowRight size={18} />
+              </Link>
+              <Link href="/category" className="btn-secondary">
+                Browse All
+              </Link>
+            </div>
           </div>
         </div>
       </section>
