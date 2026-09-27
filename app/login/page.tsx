@@ -8,15 +8,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setTimeout(() => {
       setLoading(false)
-      // Mock login - just redirect to home
-      window.location.href = '/'
+      // Mock login - redirect to dashboard
+      window.location.href = '/dashboard'
     }, 1000)
   }
 
@@ -32,12 +31,6 @@ export default function LoginPage() {
             <h1 className="font-serif italic text-2xl text-noir-50 mb-2">Welcome back</h1>
             <p className="text-sm text-noir-400">Sign in to your Floggers account</p>
           </div>
-
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-rose-dark/20 text-rose text-sm">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -59,7 +52,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  onChange={e => setForm({ ...form, password: *** })}
                   className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50 pr-10"
                   placeholder="••••••••"
                 />
