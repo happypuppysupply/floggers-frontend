@@ -23,6 +23,9 @@ export default function Navbar() {
               <ShoppingBag size={18} />
               <span>Cart</span>
             </Link>
+            <Link href="/sell" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">
+              Why Sell on Floggers
+            </Link>
             <Link href="/login" className="text-sm text-rose hover:text-rose-light transition-colors">
               Sign In
             </Link>
@@ -44,6 +47,8 @@ export default function Navbar() {
           <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
             <ShoppingBag size={18} /> Cart
           </Link>
+          <Link href="/sell" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Why Sell on Floggers</Link>
+          <Link href="/login" onClick={() => setOpen(false)} className="block text-rose hover:text-rose-light py-2">Sign In</Link>
         </div>
       )}
     </nav>
