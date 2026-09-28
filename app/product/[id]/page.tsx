@@ -3,6 +3,7 @@ import { Star, ArrowLeft, Truck, Shield, Package } from 'lucide-react'
 import { getProductById, getMakerById, getReviewsByProduct, products } from '@/lib/mockData'
 import ProductCard from '@/components/ProductCard'
 import AddToCartClient from '@/components/AddToCartClient'
+import ReviewFormClient from '@/components/ReviewFormClient'
 
 export function generateStaticParams() {
   return products.map(p => ({ id: p.id }))
@@ -110,30 +111,40 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
       {/* Reviews */}
       <div className="mb-16">
-        <h2 className="font-serif italic text-2xl text-noir-50 mb-6">Reviews ({reviews.length})</h2>
-        {reviews.length > 0 ? (
-          <div className="grid gap-4">
-            {reviews.map(r => (
-              <div key={r.id} className="card-glass p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-noir-200">{r.author}</span>
-                    {r.verified && <span className="text-[10px] bg-rose-dark/20 text-rose px-1.5 py-0.5 rounded">Verified Purchase</span>}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-serif italic text-2xl text-noir-50">Reviews ({reviews.length})</h2>
+        </div>
+
+        {/* Review List + Submission */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+            {reviews.length > 0 ? (
+              reviews.map(r => (
+                <div key={r.id} className="card-glass p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-noir-200">{r.author}</span>
+                      {r.verified && <span className="text-[10px] bg-rose-dark/20 text-rose px-1.5 py-0.5 rounded">Verified Purchase</span>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={12} className={i < r.rating ? 'fill-rose text-rose' : 'text-noir-700'} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={12} className={i < r.rating ? 'fill-rose text-rose' : 'text-noir-700'} />
-                    ))}
-                  </div>
+                  <p className="text-sm text-noir-300 leading-relaxed">{r.text}</p>
+                  <p className="text-xs text-noir-500 mt-3">{r.date}</p>
                 </div>
-                <p className="text-sm text-noir-300 leading-relaxed">{r.text}</p>
-                <p className="text-xs text-noir-500 mt-3">{r.date}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-noir-400">No reviews yet. Be the first to review this product.</p>
+            )}
           </div>
-        ) : (
-          <p className="text-noir-400">No reviews yet. Be the first to review this product.</p>
-        )}
+
+          <div>
+            <ReviewFormClient productId={product.id} />
+          </div>
+        </div>
       </div>
 
       {/* Related */}

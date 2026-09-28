@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ArrowRight } from 'lucide-react'
 
 export default function MakerSignupPage() {
   const [step, setStep] = useState(1)
@@ -24,6 +24,10 @@ export default function MakerSignupPage() {
     setTimeout(() => {
       setLoading(false)
       setSubmitted(true)
+      // Redirect to seller dashboard after short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1500)
     }, 1500)
   }
 
@@ -34,15 +38,9 @@ export default function MakerSignupPage() {
           <div className="card-glass p-8">
             <CheckCircle size={64} className="text-rose mx-auto mb-6" />
             <h1 className="font-serif italic text-2xl text-noir-50 mb-4">Application Received</h1>
-            <p className="text-noir-300 mb-2">
-              Thank you for applying to sell on Floggers!
-            </p>
-            <p className="text-sm text-noir-400 mb-6">
-              We'll review your application and get back to you within 2-3 business days.
-            </p>
-            <Link href="/" className="btn-primary">
-              Return to Marketplace
-            </Link>
+            <p className="text-noir-300 mb-2">Thank you for applying to sell on Floggers!</p>
+            <p className="text-sm text-noir-400 mb-6">We'll review your application and get back to you within 2-3 business days.</p>
+            <p className="text-xs text-noir-500">Redirecting to your seller dashboard...</p>
           </div>
         </div>
       </div>
@@ -105,12 +103,8 @@ export default function MakerSignupPage() {
                     placeholder="https://..."
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="btn-primary w-full mt-4"
-                >
-                  Continue
+                <button type="button" onClick={() => setStep(2)} className="btn-primary w-full mt-4">
+                  Continue <ArrowRight size={16} className="ml-2" />
                 </button>
               </div>
             )}
@@ -120,10 +114,7 @@ export default function MakerSignupPage() {
                 <h2 className="text-lg font-medium text-noir-100 mb-4">Tell Us About Your Craft</h2>
                 <div>
                   <label className="block text-sm text-noir-300 mb-1">What do you make?</label>
-                  <select
-                    required
-                    className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50"
-                  >
+                  <select required className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50">
                     <option value="">Select a category</option>
                     <option value="leather">Leather goods</option>
                     <option value="metal">Metalwork / Restraints</option>
@@ -145,20 +136,8 @@ export default function MakerSignupPage() {
                   />
                 </div>
                 <div className="flex gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="btn-secondary flex-1"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    className="btn-primary flex-1"
-                  >
-                    Continue
-                  </button>
+                  <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">Back</button>
+                  <button type="button" onClick={() => setStep(3)} className="btn-primary flex-1">Continue</button>
                 </div>
               </div>
             )}
@@ -195,18 +174,8 @@ export default function MakerSignupPage() {
                   </label>
                 </div>
                 <div className="flex gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="btn-secondary flex-1"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary flex-1"
-                  >
+                  <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1">Back</button>
+                  <button type="submit" disabled={loading} className="btn-primary flex-1">
                     {loading ? 'Submitting...' : 'Submit Application'}
                   </button>
                 </div>

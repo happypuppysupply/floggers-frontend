@@ -10,14 +10,19 @@ import {
   BarChart3, 
   Settings,
   Store,
+  MessageSquare,
+  MessageCircle,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Wallet
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/orders', label: 'Orders', icon: ShoppingBag },
+  { href: '/dashboard/messages', label: 'Messages', icon: MessageCircle },
+  { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
   { href: '/dashboard/customers', label: 'Customers', icon: Users },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/import', label: 'Import Store', icon: Store },
@@ -38,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -72,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <Link href="/" className="flex items-center gap-3 px-4 py-3 text-sm text-noir-400 hover:text-noir-200 transition-colors">
             <LogOut size={18} />
-            Sign Out
+            Log Out
           </Link>
         </div>
       </aside>

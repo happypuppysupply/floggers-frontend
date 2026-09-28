@@ -1,17 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, Minus, Plus } from 'lucide-react'
+import { Heart, Minus, Plus, Check, Loader2 } from 'lucide-react'
 import type { Product } from '@/lib/mockData'
 
 export default function AddToCartClient({ product }: { product: Product }) {
   const [variant, setVariant] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const [animating, setAnimating] = useState(false)
 
   const currentPrice = product.variants ? product.variants[variant].price : product.price
 
   const addToCart = () => {
+    setAnimating(true)
     const cart = JSON.parse(localStorage.getItem('floggers-cart') || '[]')
     const existing = cart.find((item: any) => item.id === product.id && item.variant === variant)
     if (existing) {
@@ -28,8 +30,13 @@ export default function AddToCartClient({ product }: { product: Product }) {
       })
     }
     localStorage.setItem('floggers-cart', JSON.stringify(cart))
+    // Dispatch a custom event so the cart badge updates
+    window.dispatchEvent(new Event('cart-updated'))
     setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
+    setTimeout(() => {
+      setAnimating(false)
+      setTimeout(() => setAdded(false), 1500)
+    }, 600)
   }
 
   return (
@@ -65,8 +72,19 @@ export default function AddToCartClient({ product }: { product: Product }) {
       </div>
 
       <div className="flex flex-wrap gap-4 mb-8">
-        <button onClick={addToCart} className={`btn-primary px-8 ${added ? 'bg-rose' : ''}`}>
-          {added ? 'Added to Cart' : 'Add to Cart'}
+        <button
+          onClick={addToCart}
+          disabled={animating}
+          className={`relative btn-primary px-8 transition-all duration-300 overflow-hidden ${added ? 'bg-emerald-600 hover:bg-emerald-600' : ''}`}
+        >
+          {animating && (
+            <span className="absolute inset-0 flex items-center justify-center bg-rose">
+              <Loader2 size={20} className="animate-spin" />
+            </span>
+          )}
+          <span className={`inline-flex items-center gap-2 transition-transform ${animating ? 'translate-y-10' : 'translate-y-0'}`}>
+            {added ? <><Check size={18} /> Added</> : 'Add to Cart'}
+          </span>
         </button>
         <button className="btn-secondary flex items-center gap-2">
           <Heart size={18} /> Save
