@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, User, Search, MoreVertical, Loader2, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
+import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
 
 interface Message {
   id: string;
@@ -85,6 +86,20 @@ export default function MessagesPage() {
       const enriched = await Promise.all(
         data.map(async (conv) => {
           const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
+          
+          // Handle AI bot
+          if (isAIUser(otherUserId)) {
+            return {
+              ...conv,
+              other_user: {
+                first_name: AI_BOT_NAME,
+                last_name: '',
+                email: 'assistant@floggers.com',
+                avatar_url: AI_BOT_AVATAR
+              }
+            }
+          }
+          
           const { data: profile } = await supabase
             .from('profiles')
             .select('first_name, last_name, email')
@@ -129,19 +144,52 @@ export default function MessagesPage() {
     }
   }
 
+  const [aiLoading, setAiLoading] = useState(false)
+
+  const activeConversation = conversations.find(c => c.id === activeId)
+  const isAIConversation = activeConversation ? isAIUser(
+    activeConversation.user1_id === user?.id ? activeConversation.user2_id : activeConversation.user1_id
+  ) : false
+
   const sendMessage = async () => {
     if (!input.trim() || !activeId || !user) return
 
+    const content = input.trim()
+    setInput('')
+
+    // Save user message
     const { error } = await supabase
       .from('messages')
       .insert({
         conversation_id: activeId,
         sender_id: user.id,
-        content: input.trim()
+        content: content
       })
 
-    if (!error) {
-      setInput('')
+    if (error) {
+      console.error('Failed to send message:', error)
+      return
+    }
+
+    // If this is an AI conversation, get AI response
+    if (isAIConversation) {
+      setAiLoading(true)
+      try {
+        const aiResponse = await sendMessageToAI(content, activeId)
+        // AI response is already saved by the API route
+      } catch (err) {
+        console.error('AI response failed:', err)
+        // Show error in chat
+        await supabase.from('messages').insert({
+          conversation_id: activeId,
+          sender_id: AI_BOT_ID,
+          content: "I'm having trouble connecting right now. Please try again in a moment.",
+          read: false
+        })
+      } finally {
+        setAiLoading(false)
+      }
+    }
     }
   }
 
@@ -191,19 +239,27 @@ export default function MessagesPage() {
                 No messages yet
               </div>
             ) : (
-              filteredConversations.map(c => (
+              filteredConversations.map(c => {
+                const isAI = isAIUser(c.user1_id === user?.id ? c.user2_id : c.user1_id)
+                const avatarUrl = c.other_user?.avatar_url
+                return (
                 <button
                   key={c.id}
                   onClick={() => setActiveId(c.id)}
                   className={`w-full flex items-center gap-3 p-4 border-b border-noir-800/30 hover:bg-noir-800/20 transition-colors text-left ${activeId === c.id ? 'bg-noir-800/30' : ''}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-medium text-noir-200">
-                      {(c.other_user?.first_name?.[0] || c.other_user?.email?.[0] || '?').toUpperCase()}
-                    </span>
-                  </div>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 border border-noir-700" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-medium text-noir-200">
+                        {(c.other_user?.first_name?.[0] || c.other_user?.email?.[0] || '?').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-noir-200 truncate">
+                      {isAI && <span className="text-rose mr-1">🤖</span>}
                       {c.other_user?.first_name || c.other_user?.email?.split('@')[0] || 'Unknown'}
                     </p>
                     <p className="text-xs text-noir-500 truncate">
@@ -223,15 +279,21 @@ export default function MessagesPage() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-noir-800/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
-                    <span className="text-sm font-medium text-noir-200">
-                      {(activeConversation.other_user?.first_name?.[0] || activeConversation.other_user?.email?.[0] || '?').toUpperCase()}
-                    </span>
-                  </div>
+                  {activeConversation.other_user?.avatar_url ? (
+                    <img src={activeConversation.other_user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border border-noir-700" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
+                      <span className="text-sm font-medium text-noir-200">
+                        {(activeConversation.other_user?.first_name?.[0] || activeConversation.other_user?.email?.[0] || '?').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-sm font-medium text-noir-200">
+                    <p className="text-sm font-medium text-noir-200 flex items-center gap-2">
+                      {isAIConversation && <span className="text-rose">🤖</span>}
                       {activeConversation.other_user?.first_name || activeConversation.other_user?.email?.split('@')[0] || 'Unknown'}
                     </p>
+                    {isAIConversation && <p className="text-[10px] text-rose/70">AI Assistant</p>}
                   </div>
                 </div>
                 <button className="p-2 rounded-lg hover:bg-noir-800 text-noir-400 hover:text-noir-200 transition-colors">
@@ -260,6 +322,14 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   ))
+                )}
+                {aiLoading && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[70%] px-4 py-3 rounded-2xl bg-noir-800 text-noir-200 rounded-bl-md flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin text-rose" />
+                      <span className="text-sm">Assistant is typing...</span>
+                    </div>
+                  </div>
                 )}
                 <div ref={bottomRef} />
               </div>

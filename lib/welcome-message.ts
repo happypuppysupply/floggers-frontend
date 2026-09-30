@@ -1,57 +1,51 @@
 import { createClient } from './supabase/client'
-
-const FLOGGERS_BOT_ID = '00000000-0000-0000-0000-000000000001'
-const WELCOME_PREFIX = 'welcome_'
+import { AI_BOT_ID } from './ai'
 
 export async function ensureWelcomeMessage(userId: string) {
   const supabase = createClient()
 
-  // Check if user already has any conversations
-  const { data: existingConvs } = await supabase
+  // Check if user already has a conversation with the AI bot
+  const { data: existingConv } = await supabase
     .from('conversations')
     .select('id')
-    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-    .limit(1)
+    .or(
+      `and(user1_id.eq.${userId},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${userId})`
+    )
+    .maybeSingle()
 
-  // If they already have conversations (including welcome), skip
-  if (existingConvs && existingConvs.length > 0) return
+  // If they already have an AI conversation, skip
+  if (existingConv) return
 
-  // Create welcome conversation (bot is user1, new user is user2)
+  // Create AI conversation (bot is user2, new user is user1)
   const { data: conv } = await supabase
     .from('conversations')
     .insert({
-      user1_id: FLOGGERS_BOT_ID,
-      user2_id: userId
+      user1_id: userId,
+      user2_id: AI_BOT_ID
     })
     .select()
     .single()
 
   if (!conv) return
 
-  // Send welcome message
+  // Send welcome message from AI
   await supabase
     .from('messages')
     .insert({
       conversation_id: conv.id,
-      sender_id: FLOGGERS_BOT_ID,
-      content: `Welcome to Floggers! 🔥
+      sender_id: AI_BOT_ID,
+      content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.
 
-We're the premier marketplace for handcrafted BDSM gear — floggers, paddles, restraints, and more.
+**I can help you with:**
+• How to browse and buy products
+• How to become a seller
+• Product recommendations
+• Community guidelines
+• Troubleshooting
 
-**Getting Started:**
-• Browse products from verified independent makers
-• Read community reviews before you buy
-• Message makers directly with questions
+Just send me a message anytime! I'm always here to help.
 
-**Community Guidelines:**
-• All makers are identity-verified
-• Discreet shipping on every order
-• Leave honest reviews to help the community
-
-**Your Account:**
-Your shop application is being reviewed. You'll be able to list products once approved. In the meantime, explore the marketplace and favorite items you love!
-
-Happy exploring!`,
+Happy exploring! 🔥`,
       read: false
     })
 }
