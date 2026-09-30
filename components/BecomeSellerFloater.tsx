@@ -18,8 +18,16 @@ export default function BecomeSellerFloater() {
       // Don't show if still loading auth
       if (authLoading) return
       
-      // Don't show if not logged in
+      // Show to guests AND non-makers
       if (!user) {
+        // Guest - show floater with sign up message
+        const dismissed = localStorage.getItem('floggers-seller-floater-dismissed')
+        const dismissedTime = dismissed ? parseInt(dismissed) : 0
+        const oneWeek = 7 * 24 * 60 * 60 * 1000
+        
+        if (!dismissed || Date.now() - dismissedTime > oneWeek) {
+          setIsVisible(true)
+        }
         setChecked(true)
         return
       }
@@ -65,6 +73,13 @@ export default function BecomeSellerFloater() {
   if (!checked || !isVisible || isMaker) {
     return null
   }
+
+  const isGuest = !user
+  const buttonText = isGuest ? 'Join & Start Selling' : 'Apply to Sell'
+  const buttonHref = isGuest ? '/signup' : '/maker/signup'
+  const subtitle = isGuest 
+    ? 'Create an account and join hundreds of makers selling handcrafted BDSM gear.'
+    : 'Join hundreds of independent makers selling handcrafted floggers, paddles, and BDSM gear.'
 
   if (isMinimized) {
     return (
@@ -113,7 +128,7 @@ export default function BecomeSellerFloater() {
             Turn your craft into income
           </h3>
           <p className="text-sm text-noir-400 mb-4">
-            Join hundreds of independent makers selling handcrafted floggers, paddles, and BDSM gear to a dedicated community.
+            {subtitle}
           </p>
           
           <div className="space-y-2 mb-4">
@@ -132,11 +147,11 @@ export default function BecomeSellerFloater() {
           </div>
 
           <Link
-            href="/maker/signup"
+            href={buttonHref}
             className="btn-primary w-full flex items-center justify-center gap-2 text-sm"
             onClick={() => setIsVisible(false)}
           >
-            Apply to Sell
+            {buttonText}
             <ChevronRight size={16} />
           </Link>
         </div>

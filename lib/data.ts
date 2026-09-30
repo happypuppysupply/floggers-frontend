@@ -51,6 +51,26 @@ export async function getProducts(): Promise<Product[]> {
   return data || [];
 }
 
+export async function getProductsByCategory(categoryId: string): Promise<Product[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('products')
+    .select(`
+      *,
+      maker:makers(name, slug, location)
+    `)
+    .eq('is_active', true)
+    .eq('category_id', categoryId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching products by category:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
   const supabase = createClient();
   const { data, error } = await supabase
