@@ -190,7 +190,6 @@ export default function MessagesPage() {
         setAiLoading(false)
       }
     }
-    }
   }
 
   useEffect(() => {
