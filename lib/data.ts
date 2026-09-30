@@ -126,7 +126,7 @@ export async function getMakers() {
   const { data, error } = await supabase
     .from('makers')
     .select('*')
-    .eq('is_active', true)
+    .eq('is_verified', true)
     .order('name');
 
   if (error) {
