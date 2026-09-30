@@ -1,14 +1,17 @@
-'use client'
-
 import Link from 'next/link'
 import { ArrowRight, Shield, Truck, Lock, Users, Flame } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
 import CategoryCard from '@/components/CategoryCard'
-import { products, categories, makers } from '@/lib/mockData'
+import { getProducts, getMakers, getCategories } from '@/lib/data'
 
-export default function Home() {
-  const floggerProducts = products.filter(p => p.category === 'floggers').slice(0, 4)
-  const featuredMakers = makers.filter(m => m.featured).slice(0, 3)
+export default async function Home() {
+  const [products, makers, categories] = await Promise.all([
+    getProducts({ featured: true, limit: 8 }),
+    getMakers({ featured: true, limit: 3 }),
+    getCategories(),
+  ])
+
+  const floggerProducts = products.filter(p => p.category_id === 'floggers').slice(0, 4)
 
   return (
     <div>
@@ -29,7 +32,7 @@ export default function Home() {
               The premier marketplace for handcrafted floggers, paddles, crops, and artisan BDSM gear. Independent makers. Verified quality. Discreet always.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/category?cat=floggers" className="btn-primary inline-flex items-center gap-2">
+              <Link href="/category/floggers" className="btn-primary inline-flex items-center gap-2">
                 Shop Floggers <ArrowRight size={18} />
               </Link>
               <Link href="/category" className="btn-secondary inline-flex items-center gap-2">
@@ -63,74 +66,80 @@ export default function Home() {
       </section>
 
       {/* Featured Floggers */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Floggers</h2>
-              <p className="text-sm text-noir-400">Hand-picked by our community — crafted by independent makers</p>
+      {floggerProducts.length > 0 && (
+        <section className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Floggers</h2>
+                <p className="text-sm text-noir-400">Hand-picked by our community — crafted by independent makers</p>
+              </div>
+              <Link href="/category/floggers" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
+                View All <ArrowRight size={14} />
+              </Link>
             </div>
-            <Link href="/category?cat=floggers" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
-              View All <ArrowRight size={14} />
-            </Link>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {floggerProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {floggerProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Categories */}
-      <section className="py-20 bg-noir-900/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="font-serif italic text-3xl text-noir-50">Shop by Category</h2>
-            <Link href="/category" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
-              View All <ArrowRight size={14} />
-            </Link>
+      {categories.length > 0 && (
+        <section className="py-20 bg-noir-900/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-10">
+              <h2 className="font-serif italic text-3xl text-noir-50">Shop by Category</h2>
+              <Link href="/category" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
+                View All <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {categories.map((cat, i) => (
+                <CategoryCard key={cat.id} category={cat} large={i < 2} />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {categories.map((cat, i) => (
-              <CategoryCard key={cat.id} category={cat} large={i < 2} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Featured Makers */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Makers</h2>
-              <p className="text-sm text-noir-400">The artisans behind the gear</p>
-            </div>
-            <Link href="/makers" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
-              Explore All <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredMakers.map(maker => (
-              <Link key={maker.id} href={`/maker/${maker.id}`} className="group card-glass p-6 hover:bg-noir-800/50 transition-colors">
-                <div className="flex items-center gap-4 mb-4">
-                  <img src={maker.image} alt={maker.name} className="w-14 h-14 rounded-full object-cover border border-noir-700" />
-                  <div>
-                    <h3 className="font-medium text-noir-100 group-hover:text-noir-50 transition-colors">{maker.name}</h3>
-                    <p className="text-xs text-noir-400">{maker.location}</p>
-                  </div>
-                </div>
-                <p className="text-sm text-noir-300 leading-relaxed mb-4">{maker.tagline}</p>
-                <div className="flex items-center gap-4 text-xs text-noir-400">
-                  <span>{maker.products} products</span>
-                  <span>★ {maker.rating}</span>
-                </div>
+      {makers.length > 0 && (
+        <section className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="font-serif italic text-3xl text-noir-50 mb-2">Featured Makers</h2>
+                <p className="text-sm text-noir-400">The artisans behind the gear</p>
+              </div>
+              <Link href="/makers" className="text-sm text-rose hover:text-rose-light transition-colors flex items-center gap-1">
+                Explore All <ArrowRight size={14} />
               </Link>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {makers.map(maker => (
+                <Link key={maker.id} href={`/maker/${maker.slug || maker.id}`} className="group card-glass p-6 hover:bg-noir-800/50 transition-colors">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img src={maker.image_url} alt={maker.name} className="w-14 h-14 rounded-full object-cover border border-noir-700" />
+                    <div>
+                      <h3 className="font-medium text-noir-100 group-hover:text-noir-50 transition-colors">{maker.name}</h3>
+                      <p className="text-xs text-noir-400">{maker.location}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-noir-300 leading-relaxed mb-4">{maker.description}</p>
+                  <div className="flex items-center gap-4 text-xs text-noir-400">
+                    <span>★ {maker.rating}</span>
+                    {maker.verified && <span className="text-emerald-400">Verified</span>}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-20">
@@ -144,7 +153,7 @@ export default function Home() {
               Explore hundreds of handcrafted products from verified independent makers in the community.
             </p>
             <div className="relative flex flex-wrap justify-center gap-4">
-              <Link href="/category?cat=floggers" className="btn-primary inline-flex items-center gap-2">
+              <Link href="/category/floggers" className="btn-primary inline-flex items-center gap-2">
                 Shop Floggers <ArrowRight size={18} />
               </Link>
               <Link href="/category" className="btn-secondary">

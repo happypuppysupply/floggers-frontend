@@ -1,32 +1,34 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import type { Category } from '@/lib/mockData'
+import { Category } from '@/lib/data'
 
-interface Props {
+interface CategoryCardProps {
   category: Category
   large?: boolean
 }
 
-export default function CategoryCard({ category, large }: Props) {
+export default function CategoryCard({ category, large = false }: CategoryCardProps) {
   return (
-    <Link
-      href={`/category?cat=${category.id}`}
-      className={`group relative overflow-hidden rounded-xl block ${large ? 'aspect-[4/3]' : 'aspect-square'}`}
+    <Link 
+      href={`/category/${category.slug}`}
+      className={`group relative overflow-hidden rounded-xl ${
+        large ? 'aspect-[4/3]' : 'aspect-square'
+      }`}
     >
-      <img
-        src={category.image}
+      <img 
+        src={category.image_url} 
         alt={category.name}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-noir-950/90 via-noir-950/40 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-5">
-        <h3 className={`font-serif italic text-noir-50 mb-1 ${large ? 'text-2xl' : 'text-lg'}`}>{category.name}</h3>
-        <p className="text-xs text-noir-300">{category.count} products</p>
-        <span className="inline-flex items-center gap-1 text-xs text-rose mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          Explore <ArrowRight size={12} />
-        </span>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+        <h3 className="font-serif italic text-xl md:text-2xl text-white mb-1">
+          {category.name}
+        </h3>
+        <p className="text-sm text-white/70">
+          {category.product_count || 0} products
+        </p>
       </div>
     </Link>
   )
