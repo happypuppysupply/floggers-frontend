@@ -1,12 +1,19 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getMakerById, getProductsByMaker, getMakerFollowerCount } from '@/lib/data';
+import { getMakerById, getMakerBySlug, getProductsByMaker, getMakerFollowerCount } from '@/lib/data';
 import ProductCard from '@/components/ProductCard';
 import FollowButton from '@/components/FollowButton';
 import { Star, MapPin, Award, Calendar, Package, Users } from 'lucide-react';
 
 export default async function MakerPage({ params }: { params: { id: string } }) {
-  const maker = await getMakerById(params.id);
+  const id = params.id
+  
+  // Try by ID first, then by slug
+  let maker = await getMakerById(id);
+  
+  if (!maker) {
+    maker = await getMakerBySlug(id);
+  }
 
   if (!maker) {
     notFound();
