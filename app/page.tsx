@@ -121,7 +121,7 @@ export default async function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {makers.map(maker => (
-                <Link key={maker.id} href={`/maker/${maker.slug || maker.id}`} className="group card-glass p-6 hover:bg-noir-800/50 transition-colors">
+                <Link key={maker.id} href={`/maker/${maker.id}`} className="group card-glass p-6 hover:bg-noir-800/50 transition-colors">
                   <div className="flex items-center gap-4 mb-4">
                     <img src={maker.image_url} alt={maker.name} className="w-14 h-14 rounded-full object-cover border border-noir-700" />
                     <div>
