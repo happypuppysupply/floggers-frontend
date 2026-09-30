@@ -34,6 +34,7 @@ export default function AddProductPage() {
   const [newProductId, setNewProductId] = useState('')
   const [makerVerified, setMakerVerified] = useState(false)
   const [images, setImages] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({
     name: '',
     category: '',
@@ -128,6 +129,35 @@ export default function AddProductPage() {
     const updated = [...form.materials]
     updated[i] = val
     setForm({ ...form, materials: updated })
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    const supabase = createClient()
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `products/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      setError('Failed to upload image: ' + uploadError.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    setImages([...images, publicUrl])
+    setUploading(false)
   }
 
   if (submitted) {
@@ -407,24 +437,23 @@ export default function AddProductPage() {
                     </div>
                   ))}
                   {images.length < 5 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Mock image upload — in production this would open a file picker
-                        const demoImages = [
-                          'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?w=400&h=400&fit=crop',
-                          'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400&h=400&fit=crop',
-                          'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400&h=400&fit=crop',
-                          'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
-                          'https://images.unsplash.com/photo-1559563362-c667ba5f5480?w=400&h=400&fit=crop'
-                        ]
-                        setImages([...images, demoImages[images.length]])
-                      }}
-                      className="aspect-square rounded-lg border-2 border-dashed border-noir-700 flex flex-col items-center justify-center gap-1 hover:border-rose/50 transition-colors"
-                    >
-                      <Upload size={20} className="text-noir-500" />
-                      <span className="text-xs text-noir-500">Add Photo</span>
-                    </button>
+                    <label className="aspect-square rounded-lg border-2 border-dashed border-noir-700 flex flex-col items-center justify-center gap-1 hover:border-rose/50 transition-colors cursor-pointer relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        className="sr-only"
+                      />
+                      {uploading ? (
+                        <Loader2 size={20} className="text-noir-500 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload size={20} className="text-noir-500" />
+                          <span className="text-xs text-noir-500">Add Photo</span>
+                        </>
+                      )}
+                    </label>
                   )}
                 </div>
                 
