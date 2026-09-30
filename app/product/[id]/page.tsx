@@ -1,193 +1,215 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { Star, ArrowLeft, Truck, Shield, Package } from 'lucide-react'
-import { getProductBySlug, getProducts, getReviewsByProduct } from '@/lib/data'
-import ProductCard from '@/components/ProductCard'
-import AddToCartClient from '@/components/AddToCartClient'
-import ReviewFormClient from '@/components/ReviewFormClient'
+import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import { getProductById, getMakerFollowerCount } from '@/lib/data';
+import AddToCartClient from '@/components/AddToCartClient';
+import ProductReviews from '@/components/ProductReviews';
+import ShippingInfo from '@/components/ShippingInfo';
+import FollowButton from '@/components/FollowButton';
+import RelatedProducts from '@/components/RelatedProducts';
+import { Star, MapPin, Package, Shield, Clock, Award, Users, Store, MessageSquare } from 'lucide-react';
 
-interface ProductPageProps {
-  params: { id: string }
+interface PageProps {
+  params: { id: string };
 }
 
-export async function generateStaticParams() {
-  const products = await getProducts({ limit: 100 })
-  return products.map(p => ({ id: p.slug || p.id }))
-}
-
-export async function generateMetadata({ params }: ProductPageProps) {
-  const product = await getProductBySlug(params.id)
-  if (!product) return { title: 'Product Not Found' }
-  
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const product = await getProductById(params.id);
+  if (!product) {
+    return { title: 'Product Not Found' };
+  }
   return {
     title: `${product.name} | Floggers`,
-    description: product.description,
-  }
+    description: product.description?.slice(0, 160),
+  };
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductBySlug(params.id)
-  
+export default async function ProductPage({ params }: PageProps) {
+  const product = await getProductById(params.id);
+
   if (!product) {
-    notFound()
+    notFound();
   }
 
-  const reviews = await getReviewsByProduct(product.id)
-  const relatedProducts = await getProducts({ 
-    category: product.category_id,
-    limit: 4 
-  })
-  const related = relatedProducts.filter(p => p.id !== product.id).slice(0, 4)
-
-  const maker = product.maker
-  const category = product.category
+  const followerCount = await getMakerFollowerCount(product.maker_id);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Link href="/category" className="inline-flex items-center gap-2 text-sm text-noir-400 hover:text-noir-200 mb-8 transition-colors">
-        <ArrowLeft size={16} /> Back to Browse
-      </Link>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-        {/* Gallery */}
+        {/* Product Images */}
         <div className="space-y-4">
-          <div className="aspect-square rounded-xl overflow-hidden bg-noir-900">
-            <img 
-              src={product.images?.[0] || '/placeholder.jpg'} 
-              alt={product.name} 
-              className="w-full h-full object-cover" 
+          <div className="aspect-square rounded-2xl overflow-hidden bg-noir-950">
+            <img
+              src={product.image_url || product.images?.[0] || '/placeholder.jpg'}
+              alt={product.name}
+              className="w-full h-full object-cover"
             />
           </div>
+          
+          {/* Thumbnail gallery */}
           {product.images && product.images.length > 1 && (
-            <div className="flex gap-3">
-              {product.images.slice(0, 4).map((img, i) => (
-                <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-noir-800">
+            <div className="grid grid-cols-5 gap-2">
+              {product.images.map((img, i) => (
+                <div key={i} className="aspect-square rounded-lg overflow-hidden">
                   <img src={img} alt="" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
           )}
+          
+          {/* Badges */}
+          <div className="grid grid-cols-2 gap-3">
+            {product.sales_count && product.sales_count > 100 && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <Award size={18} className="text-amber-400" />
+                <span className="text-xs text-amber-400">Bestseller</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <Shield size={18} className="text-emerald-400" />
+              <span className="text-xs text-emerald-400">Purchase protected</span>
+            </div>
+          </div>
         </div>
 
-        {/* Details */}
+        {/* Product Info */}
         <div>
-          {maker && (
-            <p className="text-xs uppercase tracking-wider text-rose-muted mb-2">{maker.name}</p>
-          )}
-          <h1 className="font-serif italic text-3xl md:text-4xl text-noir-50 mb-4">{product.name}</h1>
-
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-1">
-              <Star size={16} className="fill-rose text-rose" />
-              <span className="text-noir-200 font-medium">{product.rating}</span>
+          {/* Category & Maker */}
+          <div className="mb-4">
+            <p className="text-xs uppercase tracking-wider text-rose-muted mb-2">
+              {product.category?.name}
+            </p>
+            <h1 className="font-serif italic text-3xl lg:text-4xl text-noir-50 mb-4">
+              {product.name}
+            </h1>
+            
+            {/* Maker Info */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-noir-900/30 border border-noir-800">
+              {product.maker?.avatar_url ? (
+                <img 
+                  src={product.maker.avatar_url} 
+                  alt="" 
+                  className="w-12 h-12 rounded-full object-cover" 
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-rose-dark flex items-center justify-center text-rose text-lg">
+                  {product.maker?.name?.[0]}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <a 
+                  href={`/maker/${product.maker?.slug || product.maker_id}`}
+                  className="text-sm font-medium text-noir-100 hover:text-rose transition-colors block truncate"
+                >
+                  {product.maker?.name}
+                </a>
+                <div className="flex items-center gap-3 mt-1">
+                  {product.maker?.rating && (
+                    <span className="text-xs text-amber-400 flex items-center gap-1">
+                      <Star size={12} className="fill-amber-400" />
+                      {product.maker.rating.toFixed(1)}
+                    </span>
+                  )}
+                  {product.maker?.sales_count && (
+                    <span className="text-xs text-noir-500">
+                      {product.maker.sales_count >= 1000 
+                        ? `${(product.maker.sales_count / 1000).toFixed(1)}k` 
+                        : product.maker.sales_count} sales
+                    </span>
+                  )}
+                </div>
+              </div>
+              <FollowButton 
+                makerId={product.maker_id} 
+                followerCount={followerCount}
+              />
             </div>
-            <span className="text-noir-500 text-sm">{product.review_count} reviews</span>
-            {product.badge && (
-              <span className="bg-rose-dark/20 text-rose text-xs font-medium px-2 py-0.5 rounded">{product.badge}</span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-2 mb-6">
+            <span className="text-4xl font-serif italic text-noir-50">
+              ${product.price}
+            </span>
+            {product.price > 100 && (
+              <span className="text-sm text-emerald-400">
+                or 4 interest-free payments of ${(product.price / 4).toFixed(2)}
+              </span>
             )}
           </div>
 
-          <p className="text-2xl font-medium text-noir-50 mb-6">${product.price}</p>
+          {/* Stock */}
+          {product.quantity !== undefined && (
+            <p className="text-sm text-noir-400 mb-6">
+              {product.quantity > 10 ? 'In stock' : product.quantity > 0 ? `Only ${product.quantity} left` : 'Out of stock'}
+            </p>
+          )}
 
-          <p className="text-noir-300 leading-relaxed mb-6">{product.description}</p>
+          {/* Materials */}
+          {product.materials && product.materials.length > 0 && (
+            <div className="mb-6">
+              <p className="text-xs text-noir-400 uppercase tracking-wider mb-2">Materials</p>
+              <div className="flex flex-wrap gap-2">
+                {product.materials.map((material) => (
+                  <span 
+                    key={material}
+                    className="px-3 py-1.5 text-xs bg-noir-900 rounded-full text-noir-300"
+                  >
+                    {material}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
+          {/* Description */}
+          {product.description && (
+            <div className="mb-6">
+              <p className="text-sm text-noir-300 leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+          )}
+
+          {/* Shipping Info */}
+          <div className="mb-6">
+            <ShippingInfo
+              shipping_cost={product.shipping_cost || 0}
+              shipping_time_min={product.shipping_time_min}
+              shipping_time_max={product.shipping_time_max}
+              free_shipping_over={product.free_shipping_over}
+              ships_from={product.ships_from}
+              product_price={product.price}
+            />
+          </div>
+
+          {/* Add to Cart */}
           <AddToCartClient product={product} />
 
-          {maker && (
-            <Link 
-              href={`/maker/${maker.slug || maker.id}`} 
-              className="flex items-center gap-4 p-4 rounded-xl bg-noir-900/50 border border-noir-800/50 hover:border-noir-700 transition-colors"
+          {/* Maker quick actions */}
+          <div className="flex gap-3">
+            <a 
+              href={`/maker/${product.maker?.slug || product.maker_id}`}
+              className="flex-1 btn-secondary text-sm inline-flex items-center justify-center gap-2"
             >
-              <img src={maker.image_url} alt={maker.name} className="w-12 h-12 rounded-full object-cover" />
-              <div>
-                <p className="text-sm font-medium text-noir-200">Sold by {maker.name}</p>
-                <p className="text-xs text-noir-400">{maker.location} · {maker.rating} ★</p>
-              </div>
-            </Link>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-            <div className="flex items-center gap-3 text-sm text-noir-400">
-              <Truck size={18} className="text-rose-muted" />
-              <span>Discreet shipping</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-noir-400">
-              <Shield size={18} className="text-rose-muted" />
-              <span>Verified maker</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-noir-400">
-              <Package size={18} className="text-rose-muted" />
-              <span>Secure packaging</span>
-            </div>
+              <Store size={16} /> Visit shop
+            </a>
+            <button className="flex-1 btn-secondary text-sm inline-flex items-center justify-center gap-2">
+              <MessageSquare size={16} /> Message maker
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Materials */}
-      {product.materials && product.materials.length > 0 && (
-        <div className="mb-16">
-          <h2 className="font-serif italic text-2xl text-noir-50 mb-4">Materials & Craft</h2>
-          <div className="card-glass p-6">
-            <ul className="space-y-2">
-              {product.materials.map((m, i) => (
-                <li key={i} className="flex items-center gap-3 text-sm text-noir-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose" />
-                  {m}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
 
       {/* Reviews */}
-      <div className="mb-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-serif italic text-2xl text-noir-50">Reviews ({reviews.length})</h2>
-        </div>
+      <ProductReviews productId={product.id} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
-            {reviews.length > 0 ? (
-              reviews.map(r => (
-                <div key={r.id} className="card-glass p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-noir-200">
-                        {r.user?.email?.split('@')[0] || 'Anonymous'}
-                      </span>
-                      {r.verified && <span className="text-[10px] bg-rose-dark/20 text-rose px-1.5 py-0.5 rounded">Verified Purchase</span>}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={12} className={i < r.rating ? 'fill-rose text-rose' : 'text-noir-700'} />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-sm text-noir-300 leading-relaxed">{r.text}</p>
-                  <p className="text-xs text-noir-500 mt-3">{new Date(r.created_at).toLocaleDateString()}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-noir-400">No reviews yet. Be the first to review this product.</p>
-            )}
-          </div>
-
-          <div>
-            <ReviewFormClient productId={product.id} />
-          </div>
-        </div>
-      </div>
-
-      {/* Related */}
-      {related.length > 0 && (
-        <div>
-          <h2 className="font-serif italic text-2xl text-noir-50 mb-6">You May Also Like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {related.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
-        </div>
-      )}
+      {/* Related Products */}
+      <RelatedProducts 
+        productId={product.id}
+        makerId={product.maker_id}
+        makerName={product.maker?.name || 'Unknown'}
+        categoryId={product.category_id}
+      />
     </div>
-  )
+  );
 }

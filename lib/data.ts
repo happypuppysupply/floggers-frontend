@@ -1,419 +1,528 @@
-import { createClient } from '@/lib/supabase/client'
-
 export interface Product {
-  id: string
-  maker_id: string
-  category_id: string
-  name: string
-  slug: string
-  description: string
-  price: number
-  rating: number
-  reviews_count: number
-  image_url: string | null
-  images: string[] // parsed from image_url or separate
-  materials: string[]
-  badge: string | null
-  featured: boolean
-  is_active: boolean
-  stock_count: number
-  created_at: string
-  updated_at: string
-  maker?: Maker
-  category?: Category
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image_url?: string;
+  images?: string[];
+  category_id?: string;
+  maker_id?: string;
+  maker?: {
+    name: string;
+    slug?: string;
+    location?: string;
+  };
+  rating?: number;
+  sales_count?: number;
+  in_stock?: boolean;
+  quantity?: number;
+  materials?: string[];
+  badges?: string[];
+  category?: {
+    name: string;
+    slug: string;
+  };
+  // Shipping fields (from 002 migration)
+  shipping_cost?: number;
+  shipping_time_min?: number;
+  shipping_time_max?: number;
+  shipping_policies?: string;
+  free_shipping_over?: number;
+  ships_from?: string;
 }
 
-export interface Maker {
-  id: string
-  profile_id: string
-  name: string
-  slug: string
-  description: string
-  bio: string
-  location: string
-  rating: number
-  products_count: number
-  image_url: string
-  verified: boolean
-  featured: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+import { createClient } from './supabase/client';
 
-export interface Category {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  image_url: string | null
-  product_count: number
-}
-
-export interface Review {
-  id: string
-  product_id: string
-  user_id: string | null
-  author_name: string
-  rating: number
-  text: string
-  verified: boolean
-  created_at: string
-}
-
-// Products
-export async function getProducts(options?: {
-  category?: string
-  featured?: boolean
-  maker?: string
-  limit?: number
-}): Promise<Product[]> {
-  const supabase = createClient()
-  let query = supabase
-    .from('products')
-    .select('*, maker:makers(*), category:categories(*)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-
-  if (options?.category) {
-    query = query.eq('category_id', options.category)
-  }
-
-  if (options?.featured) {
-    query = query.eq('featured', true)
-  }
-
-  if (options?.maker) {
-    query = query.eq('maker_id', options.maker)
-  }
-
-  if (options?.limit) {
-    query = query.limit(options.limit)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching products:', error)
-    return []
-  }
-
-  return (data || []).map(p => ({
-    ...p,
-    images: p.images || (p.image_url ? [p.image_url] : []),
-  }))
-}
-
-export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const supabase = createClient()
+export async function getProducts(): Promise<Product[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('products')
-    .select('*, maker:makers(*), category:categories(*)')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
+    .select(`
+      *,
+      maker:makers(name, slug, location)
+    `)
+    .eq('is_active', true);
 
   if (error) {
-    console.error('Error fetching product:', error)
-    return null
+    console.error('Error fetching products:', error);
+    return [];
   }
 
-  if (!data) return null
-
-  return {
-    ...data,
-    images: data.images || (data.image_url ? [data.image_url] : []),
-  }
+  return data || [];
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const supabase = createClient()
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('products')
-    .select('*, maker:makers(*), category:categories(*)')
+    .select(`
+      *,
+      maker:makers(*),
+      category:categories(name, slug)
+    `)
     .eq('id', id)
-    .eq('is_active', true)
-    .single()
+    .single();
 
   if (error) {
-    console.error('Error fetching product:', error)
-    return null
+    console.error('Error fetching product:', error);
+    return null;
   }
 
-  if (!data) return null
-
-  return {
-    ...data,
-    images: data.images || (data.image_url ? [data.image_url] : []),
-  }
+  return data;
 }
 
-// Makers
-export async function getMakers(options?: { featured?: boolean; limit?: number }): Promise<Maker[]> {
-  const supabase = createClient()
-  let query = supabase
-    .from('makers')
-    .select('*')
-    .eq('is_active', true)
-    .order('rating', { ascending: false })
-
-  if (options?.featured) {
-    query = query.eq('featured', true)
-  }
-
-  if (options?.limit) {
-    query = query.limit(options.limit)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching makers:', error)
-    return []
-  }
-
-  return data || []
-}
-
-export async function getMakerBySlug(slug: string): Promise<Maker | null> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('makers')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching maker:', error)
-    return null
-  }
-
-  return data
-}
-
-export async function getMakerById(id: string): Promise<Maker | null> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('makers')
-    .select('*')
-    .eq('id', id)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching maker:', error)
-    return null
-  }
-
-  return data
-}
-
-// Categories
-export async function getCategories(): Promise<Category[]> {
-  const supabase = createClient()
+export async function getCategories() {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .order('sort_order', { ascending: true })
+    .order('name');
 
   if (error) {
-    console.error('Error fetching categories:', error)
-    return []
+    console.error('Error fetching categories:', error);
+    return [];
   }
 
-  return data || []
+  return data || [];
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const supabase = createClient()
+export async function getFeaturedProducts(limit: number = 8): Promise<Product[]> {
+  const supabase = createClient();
+  // Get random featured products
   const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  if (error) {
-    console.error('Error fetching category:', error)
-    return null
-  }
-
-  return data
-}
-
-// Reviews
-export async function getReviewsByProduct(productId: string): Promise<Review[]> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('reviews')
-    .select('*')
-    .eq('product_id', productId)
+    .from('products')
+    .select(`
+      *,
+      maker:makers(name, slug, location)
+    `)
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) {
-    console.error('Error fetching reviews:', error)
-    return []
+    console.error('Error fetching featured products:', error);
+    return [];
   }
 
-  return data || []
+  return data || [];
 }
 
-export async function createReview(review: {
-  product_id: string
-  author_name: string
-  rating: number
-  text: string
-}): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient()
-  
-  const { error } = await supabase.from('reviews').insert({
-    ...review,
-    verified: false,
-    created_at: new Date().toISOString(),
-  })
+export async function searchProducts(query: string): Promise<Product[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('search_products', {
+    search_query: query,
+  });
 
   if (error) {
-    console.error('Error creating review:', error)
-    return { success: false, error: error.message }
+    console.error('Error searching products:', error);
+    return [];
   }
 
-  return { success: true }
+  return data || [];
 }
 
-// Cart - Database operations
-export async function getCartItems(userId: string): Promise<any[]> {
-  const supabase = createClient()
+export async function getMakers() {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('makers')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching makers:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getMakerBySlug(slug: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('makers')
+    .select(`
+      *,
+      products:products(*)
+    `)
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    console.error('Error fetching maker:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function getMakerById(id: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('makers')
+    .select(`
+      *,
+      products:products(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching maker:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Cart functions
+export async function getCartItems(userId: string) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('cart_items')
-    .select('*, product:products(*)')
-    .eq('user_id', userId)
+    .select(`
+      *,
+      product:products(
+        id, name, price, image_url,
+        maker:makers(name)
+      )
+    `)
+    .eq('user_id', userId);
 
   if (error) {
-    console.error('Error fetching cart:', error)
-    return []
+    console.error('Error fetching cart:', error);
+    return [];
   }
 
-  return data || []
+  return data || [];
 }
 
-export async function addToCart(item: {
-  user_id: string
-  product_id: string
-  quantity: number
-  variant?: string
-}): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient()
-
-  // Check if item already exists
-  const { data: existing } = await supabase
+export async function addToCart({ user_id, product_id, quantity = 1, variant_label = null }: any) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
     .from('cart_items')
-    .select('id, quantity')
-    .eq('user_id', item.user_id)
-    .eq('product_id', item.product_id)
-    .eq('variant_label', item.variant || '')
-    .single()
-
-  if (existing) {
-    // Update quantity
-    const { error } = await supabase
-      .from('cart_items')
-      .update({ quantity: existing.quantity + item.quantity })
-      .eq('id', existing.id)
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-  } else {
-    // Insert new
-    const { error } = await supabase.from('cart_items').insert({
-      user_id: item.user_id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      variant_label: item.variant || null,
-    })
-    if (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  return { success: true }
-}
-
-export async function updateCartItem(id: string, quantity: number): Promise<{ success: boolean }> {
-  const supabase = createClient()
-  
-  if (quantity <= 0) {
-    await supabase.from('cart_items').delete().eq('id', id)
-  } else {
-    await supabase.from('cart_items').update({ quantity }).eq('id', id)
-  }
-  
-  return { success: true }
-}
-
-export async function removeFromCart(id: string): Promise<{ success: boolean }> {
-  const supabase = createClient()
-  await supabase.from('cart_items').delete().eq('id', id)
-  return { success: true }
-}
-
-// Orders
-export async function createOrder(order: {
-  user_id: string
-  items: any[]
-  shipping_address: any
-  total: number
-  shipping: number
-}): Promise<{ success: boolean; orderId?: string; error?: string }> {
-  const supabase = createClient()
-
-  // Use the database function
-  const { data, error } = await supabase.rpc('create_order_from_cart', {
-    p_user_id: order.user_id,
-    p_shipping_address: order.shipping_address,
-    p_shipping_cost: order.shipping,
-  })
+    .upsert(
+      { 
+        user_id, 
+        product_id, 
+        quantity,
+        variant_label,
+        updated_at: new Date().toISOString()
+      },
+      { 
+        onConflict: 'user_id,product_id',
+        ignoreDuplicates: false
+      }
+    );
 
   if (error) {
-    return { success: false, error: error.message }
+    console.error('Error adding to cart:', error);
+    return { success: false, error: error.message };
   }
 
-  return { success: true, orderId: data }
+  return { success: true, data };
 }
 
-export async function getOrdersByUser(userId: string): Promise<any[]> {
-  const supabase = createClient()
+export async function updateCartItem(itemId: string, quantity: number) {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('cart_items')
+    .update({ quantity })
+    .eq('id', itemId);
+
+  if (error) {
+    console.error('Error updating cart:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function removeFromCart(itemId: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('cart_items')
+    .delete()
+    .eq('id', itemId);
+
+  if (error) {
+    console.error('Error removing from cart:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// Order functions
+export async function createOrder({ user_id, items, shipping_address, total, shipping }: any) {
+  const supabase = createClient();
+  
+  // Use the RPC function to create order from cart
+  const { data: orderId, error: orderError } = await supabase.rpc('create_order_from_cart', {
+    p_user_id: user_id,
+    p_shipping_address: JSON.stringify(shipping_address),
+    p_shipping_cost: shipping
+  });
+
+  if (orderError) {
+    console.error('Error creating order:', orderError);
+    return { success: false, error: orderError.message };
+  }
+
+  return { success: true, orderId };
+}
+
+export async function getOrders(userId: string) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('orders')
-    .select('*, items:order_items(*, product:products(name, image_url))')
+    .select(`
+      *,
+      items:order_items(
+        *,
+        product:products(name, image_url)
+      )
+    `)
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching orders:', error)
-    return []
+    console.error('Error fetching orders:', error);
+    return [];
   }
 
-  return data || []
+  return data || [];
 }
 
-// Search
-export async function searchProducts(query: string): Promise<Product[]> {
-  const supabase = createClient()
+// Review functions
+export async function getReviews(productId: string) {
+  const supabase = createClient();
   const { data, error } = await supabase
-    .from('products')
-    .select('*, maker:makers(*)')
-    .eq('is_active', true)
-    .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-    .limit(20)
+    .from('reviews')
+    .select(`
+      *,
+      user:profiles(first_name, last_name, avatar_url)
+    `)
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error searching products:', error)
-    return []
+    console.error('Error fetching reviews:', error);
+    return [];
   }
 
-  return (data || []).map(p => ({
-    ...p,
-    images: p.images || (p.image_url ? [p.image_url] : []),
-  }))
+  return data || [];
+}
+
+export async function createReview({ user_id, product_id, rating, comment }: any) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert({
+      user_id,
+      product_id,
+      rating,
+      comment
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating review:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data };
+}
+
+// NEW: Check if user purchased product (for reviews)
+export async function userPurchasedProduct(userId: string, productId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('user_purchased_product', {
+    p_user_id: userId,
+    p_product_id: productId
+  });
+
+  if (error) {
+    console.error('Error checking purchase:', error);
+    return false;
+  }
+
+  return data || false;
+}
+
+// NEW: Follow maker functions
+export async function isFollowingMaker(userId: string, makerId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('maker_follows')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('maker_id', makerId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking follow:', error);
+    return false;
+  }
+
+  return !!data;
+}
+
+export async function getMakerFollowerCount(makerId: string): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('maker_follows')
+    .select('id', { count: 'exact', head: true })
+    .eq('maker_id', makerId);
+
+  if (error) {
+    console.error('Error fetching follower count:', error);
+    return 0;
+  }
+
+  return data || 0;
+}
+
+export async function followMaker(userId: string, makerId: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('maker_follows')
+    .insert({ user_id: userId, maker_id: makerId });
+
+  if (error) {
+    console.error('Error following maker:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function unfollowMaker(userId: string, makerId: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('maker_follows')
+    .delete()
+    .eq('user_id', userId)
+    .eq('maker_id', makerId);
+
+  if (error) {
+    console.error('Error unfollowing maker:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// NEW: Get related products
+export async function getRelatedProducts(productId: string, makerId?: string, categoryId?: string): Promise<Product[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('get_related_products', {
+    p_product_id: productId,
+    p_maker_id: makerId || null,
+    p_category_id: categoryId || null,
+    p_limit: 6
+  });
+
+  if (error) {
+    console.error('Error fetching related products:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// NEW: Get products by maker (for "More from this shop")
+export async function getProductsByMaker(makerId: string, excludeProductId?: string, limit: number = 4): Promise<Product[]> {
+  const supabase = createClient();
+  
+  let query = supabase
+    .from('products')
+    .select(`
+      *,
+      maker:makers(name)
+    `)
+    .eq('maker_id', makerId)
+    .eq('is_active', true);
+  
+  if (excludeProductId) {
+    query = query.neq('id', excludeProductId);
+  }
+  
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching maker products:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Message functions
+export async function getConversations(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('conversations')
+    .select(`
+      *,
+      last_message:messages(content, created_at)
+    `)
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching conversations:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getMessages(conversationId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('messages')
+    .select(`
+      *,
+      sender:profiles(first_name, last_name, avatar_url)
+    `)
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching messages:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function sendMessage({ conversation_id, sender_id, content }: any) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id,
+      sender_id,
+      content
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error sending message:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data };
 }
