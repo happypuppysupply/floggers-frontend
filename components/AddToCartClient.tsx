@@ -18,24 +18,41 @@ export default function AddToCartClient({ product }: AddToCartClientProps) {
   const { user } = useAuth()
 
   const addToCartHandler = async () => {
-    if (!user) {
-      window.location.href = '/login'
-      return
-    }
-
     setAnimating(true)
     setError('')
 
-    const result = await addToCart({
-      user_id: user.id,
-      product_id: product.id,
-      quantity,
-    })
+    if (user) {
+      // Logged in - save to Supabase
+      const result = await addToCart({
+        user_id: user.id,
+        product_id: product.id,
+        quantity,
+      })
 
-    if (!result.success) {
-      setError(result.error || 'Failed to add to cart')
-      setAnimating(false)
-      return
+      if (!result.success) {
+        setError(result.error || 'Failed to add to cart')
+        setAnimating(false)
+        return
+      }
+    } else {
+      // Guest - save to localStorage
+      const cart = JSON.parse(localStorage.getItem('floggers-cart') || '[]')
+      const existingIdx = cart.findIndex((item: any) => item.id === product.id)
+      
+      if (existingIdx >= 0) {
+        cart[existingIdx].quantity += quantity
+      } else {
+        cart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image_url || product.images?.[0] || '/placeholder.jpg',
+          makerName: product.maker?.name || 'Unknown',
+          quantity
+        })
+      }
+      
+      localStorage.setItem('floggers-cart', JSON.stringify(cart))
     }
 
     setAdded(true)
@@ -91,6 +108,12 @@ export default function AddToCartClient({ product }: AddToCartClientProps) {
           <Heart size={18} /> Save
         </button>
       </div>
+      
+      {!user && (
+        <p className="text-xs text-noir-500 mt-4">
+          You can checkout as a guest, or <a href="/signup" className="text-rose hover:underline">create an account</a> to save your cart
+        </p>
+      )}
     </div>
   )
 }
