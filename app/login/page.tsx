@@ -54,10 +54,13 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
+    // Dynamic redirect: use current origin so staging/production both work
+    const redirectUrl = `${window.location.origin}/auth/callback`
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://floggers-frontend.vercel.app/auth/callback',
+        redirectTo: redirectUrl,
       },
     })
 

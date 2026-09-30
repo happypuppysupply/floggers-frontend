@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
+  console.log('Auth callback hit:', { code: code?.slice(0, 10), error, origin })
+
   // Handle Supabase auth errors
   if (error) {
     console.error('OAuth error from provider:', error, errorDescription)
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!code) {
+    console.error('No code in callback')
     return NextResponse.redirect(`${origin}/login?error=no_code`)
   }
 
@@ -32,6 +35,7 @@ export async function GET(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
+          console.log('Setting cookies:', cookiesToSet.map(c => c.name))
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value)
             response.cookies.set(name, value, options)
@@ -53,26 +57,29 @@ export async function GET(request: NextRequest) {
   // Get user after successful exchange
   const { data: { user } } = await supabase.auth.getUser()
   
+  console.log('User after exchange:', user?.id, user?.email)
+  
   if (!user) {
     return NextResponse.redirect(`${origin}/login?error=no_user_after_exchange`)
   }
   
-  // Check if profile exists - if not, user exists in auth but profile creation failed
+  // Check if profile exists
   const { data: existingProfile } = await supabase
     .from('profiles')
     .select('id, role')
     .eq('id', user.id)
     .maybeSingle()
   
-  // Build redirect URL with profile status
+  console.log('Profile found:', existingProfile)
+  
+  // Redirect based on role
   if (existingProfile) {
     const redirectTo = existingProfile.role === 'maker' ? '/dashboard' : '/'
+    console.log('Redirecting to:', redirectTo)
     response = NextResponse.redirect(`${origin}${redirectTo}`, { status: 302 })
   } else {
-    // Profile missing - redirect home, we'll create it client-side
-    console.warn('User authenticated but profile missing:', user.id)
-    // Add flag so UI can show "Complete profile" prompt
-    response = NextResponse.redirect(`${origin}/?setup_profile=true`, { status: 302 })
+    console.warn('No profile found, redirecting home')
+    response = NextResponse.redirect(`${origin}/`, { status: 302 })
   }
   
   return response
