@@ -32,6 +32,7 @@ export default function AddProductPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [newProductId, setNewProductId] = useState('')
+  const [makerVerified, setMakerVerified] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [form, setForm] = useState({
     name: '',
@@ -61,10 +62,10 @@ export default function AddProductPage() {
 
     const supabase = createClient()
 
-    // Get the maker ID for this user
+    // Get the maker ID for this user (works even if not yet verified)
     const { data: maker, error: makerError } = await supabase
       .from('makers')
-      .select('id')
+      .select('id, is_verified')
       .eq('profile_id', user.id)
       .single()
 
@@ -73,6 +74,8 @@ export default function AddProductPage() {
       setSubmitting(false)
       return
     }
+
+    setMakerVerified(maker.is_verified)
 
     // Create slug
     const slug = generateSlug(form.name)
@@ -94,7 +97,7 @@ export default function AddProductPage() {
         materials: materials,
         image_url: images[0] || null,
         images: images.slice(0, 5),
-        is_active: true,
+        is_active: maker.is_verified,
         // Shipping fields
         shipping_cost: form.shipping_cost ? parseFloat(form.shipping_cost) : 0,
         shipping_time_min: form.shipping_time_min ? parseInt(form.shipping_time_min) : null,
@@ -132,9 +135,13 @@ export default function AddProductPage() {
       <div className="p-8">
         <div className="max-w-xl mx-auto text-center card-glass p-8">
           <CheckCircle size={64} className="text-emerald-400 mx-auto mb-6" />
-          <h1 className="font-serif italic text-2xl text-noir-50 mb-4">Product Listed!</h1>
+          <h1 className="font-serif italic text-2xl text-noir-50 mb-4">Product Saved!</h1>
           <p className="text-noir-300 mb-2">Your product has been added to your shop.</p>
-          <p className="text-sm text-noir-400 mb-6">It is now live and available for purchase.</p>
+          <p className="text-sm text-noir-400 mb-6">
+            {makerVerified 
+              ? 'It is now live and available for purchase.'
+              : 'Your shop is pending approval — products will go live once verified.'}
+          </p>
           <div className="flex gap-3 justify-center">
             <Link href={`/product/${newProductId}`} className="btn-primary">View Product</Link>
             <Link href="/dashboard/products/new" className="btn-secondary">Add Another</Link>

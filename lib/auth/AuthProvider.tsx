@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { ensureWelcomeMessage } from '@/lib/welcome-message'
 
 interface AuthContextType {
   user: User | null
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
+        ensureWelcomeMessage(session.user.id).catch(console.error)
       }
       setLoading(false)
     })
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
+        ensureWelcomeMessage(session.user.id).catch(console.error)
       } else {
         setProfile(null)
       }

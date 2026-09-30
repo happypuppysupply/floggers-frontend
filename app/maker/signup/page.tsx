@@ -91,6 +91,29 @@ export default function MakerSignupPage() {
       return
     }
 
+    // ALSO create the maker record immediately (unverified/pending)
+    // This lets them add products right away while waiting for approval
+    const { error: makerError } = await supabase
+      .from('makers')
+      .insert({
+        profile_id: user.id,
+        name: form.shopName,
+        slug: generateSlug(form.shopName),
+        tagline: form.category,
+        bio: form.description,
+        location: form.location,
+        rating: 0,
+        products_count: 0,
+        featured: false,
+        is_verified: false,
+        is_active: true
+      })
+
+    if (makerError) {
+      console.error('Maker creation error (non-fatal):', makerError)
+      // Don't block - application was created successfully
+    }
+
     setSubmitted(true)
     setLoading(false)
   }
