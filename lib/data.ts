@@ -9,29 +9,34 @@ export interface Product {
   description: string
   price: number
   rating: number
-  review_count: number
-  images: string[]
+  reviews_count: number
+  image_url: string | null
+  images: string[] // parsed from image_url or separate
   materials: string[]
   badge: string | null
   featured: boolean
+  is_active: boolean
+  stock_count: number
   created_at: string
   updated_at: string
-  // Joined data
   maker?: Maker
   category?: Category
 }
 
 export interface Maker {
   id: string
+  profile_id: string
   name: string
   slug: string
   description: string
   bio: string
   location: string
   rating: number
+  products_count: number
   image_url: string
   verified: boolean
   featured: boolean
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -40,22 +45,20 @@ export interface Category {
   id: string
   name: string
   slug: string
-  description: string
-  image_url: string
-  product_count?: number
+  description: string | null
+  image_url: string | null
+  product_count: number
 }
 
 export interface Review {
   id: string
   product_id: string
-  user_id: string
+  user_id: string | null
+  author_name: string
   rating: number
   text: string
   verified: boolean
   created_at: string
-  user?: {
-    email: string
-  }
 }
 
 // Products
@@ -69,7 +72,7 @@ export async function getProducts(options?: {
   let query = supabase
     .from('products')
     .select('*, maker:makers(*), category:categories(*)')
-    .eq('active', true)
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   if (options?.category) {
@@ -95,7 +98,10 @@ export async function getProducts(options?: {
     return []
   }
 
-  return data || []
+  return (data || []).map(p => ({
+    ...p,
+    images: p.images || (p.image_url ? [p.image_url] : []),
+  }))
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -104,7 +110,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     .from('products')
     .select('*, maker:makers(*), category:categories(*)')
     .eq('slug', slug)
-    .eq('active', true)
+    .eq('is_active', true)
     .single()
 
   if (error) {
@@ -112,7 +118,12 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     return null
   }
 
-  return data
+  if (!data) return null
+
+  return {
+    ...data,
+    images: data.images || (data.image_url ? [data.image_url] : []),
+  }
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
@@ -121,7 +132,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     .from('products')
     .select('*, maker:makers(*), category:categories(*)')
     .eq('id', id)
-    .eq('active', true)
+    .eq('is_active', true)
     .single()
 
   if (error) {
@@ -129,7 +140,12 @@ export async function getProductById(id: string): Promise<Product | null> {
     return null
   }
 
-  return data
+  if (!data) return null
+
+  return {
+    ...data,
+    images: data.images || (data.image_url ? [data.image_url] : []),
+  }
 }
 
 // Makers
@@ -138,6 +154,7 @@ export async function getMakers(options?: { featured?: boolean; limit?: number }
   let query = supabase
     .from('makers')
     .select('*')
+    .eq('is_active', true)
     .order('rating', { ascending: false })
 
   if (options?.featured) {
@@ -164,6 +181,7 @@ export async function getMakerBySlug(slug: string): Promise<Maker | null> {
     .from('makers')
     .select('*')
     .eq('slug', slug)
+    .eq('is_active', true)
     .single()
 
   if (error) {
@@ -180,6 +198,7 @@ export async function getMakerById(id: string): Promise<Maker | null> {
     .from('makers')
     .select('*')
     .eq('id', id)
+    .eq('is_active', true)
     .single()
 
   if (error) {
@@ -195,18 +214,15 @@ export async function getCategories(): Promise<Category[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('categories')
-    .select('*, product_count:products(count)')
-    .order('name')
+    .select('*')
+    .order('sort_order', { ascending: true })
 
   if (error) {
     console.error('Error fetching categories:', error)
     return []
   }
 
-  return (data || []).map(cat => ({
-    ...cat,
-    product_count: cat.product_count?.[0]?.count || 0,
-  }))
+  return data || []
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -230,9 +246,8 @@ export async function getReviewsByProduct(productId: string): Promise<Review[]> 
   const supabase = createClient()
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, user:profiles(email)')
+    .select('*')
     .eq('product_id', productId)
-    .eq('approved', true)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -245,7 +260,7 @@ export async function getReviewsByProduct(productId: string): Promise<Review[]> 
 
 export async function createReview(review: {
   product_id: string
-  user_id: string
+  author_name: string
   rating: number
   text: string
 }): Promise<{ success: boolean; error?: string }> {
@@ -253,8 +268,7 @@ export async function createReview(review: {
   
   const { error } = await supabase.from('reviews').insert({
     ...review,
-    verified: false, // Will be updated by trigger if user purchased
-    approved: false,  // Requires moderation
+    verified: false,
     created_at: new Date().toISOString(),
   })
 
@@ -296,7 +310,7 @@ export async function addToCart(item: {
     .select('id, quantity')
     .eq('user_id', item.user_id)
     .eq('product_id', item.product_id)
-    .eq('variant', item.variant || null)
+    .eq('variant_label', item.variant || '')
     .single()
 
   if (existing) {
@@ -311,7 +325,12 @@ export async function addToCart(item: {
     }
   } else {
     // Insert new
-    const { error } = await supabase.from('cart_items').insert(item)
+    const { error } = await supabase.from('cart_items').insert({
+      user_id: item.user_id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      variant_label: item.variant || null,
+    })
     if (error) {
       return { success: false, error: error.message }
     }
@@ -348,50 +367,25 @@ export async function createOrder(order: {
 }): Promise<{ success: boolean; orderId?: string; error?: string }> {
   const supabase = createClient()
 
-  // Create order
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      user_id: order.user_id,
-      status: 'pending',
-      total: order.total,
-      shipping: order.shipping,
-      shipping_address: order.shipping_address,
-      created_at: new Date().toISOString(),
-    })
-    .select()
-    .single()
+  // Use the database function
+  const { data, error } = await supabase.rpc('create_order_from_cart', {
+    p_user_id: order.user_id,
+    p_shipping_address: order.shipping_address,
+    p_shipping_cost: order.shipping,
+  })
 
-  if (orderError || !orderData) {
-    return { success: false, error: orderError?.message }
+  if (error) {
+    return { success: false, error: error.message }
   }
 
-  // Create order items
-  const orderItems = order.items.map(item => ({
-    order_id: orderData.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    price: item.price,
-    variant: item.variant,
-  }))
-
-  const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-  
-  if (itemsError) {
-    return { success: false, error: itemsError.message }
-  }
-
-  // Clear cart
-  await supabase.from('cart_items').delete().eq('user_id', order.user_id)
-
-  return { success: true, orderId: orderData.id }
+  return { success: true, orderId: data }
 }
 
 export async function getOrdersByUser(userId: string): Promise<any[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('orders')
-    .select('*, items:order_items(*, product:products(name, images))')
+    .select('*, items:order_items(*, product:products(name, image_url))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -409,7 +403,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*, maker:makers(*)')
-    .eq('active', true)
+    .eq('is_active', true)
     .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
     .limit(20)
 
@@ -418,5 +412,8 @@ export async function searchProducts(query: string): Promise<Product[]> {
     return []
   }
 
-  return data || []
+  return (data || []).map(p => ({
+    ...p,
+    images: p.images || (p.image_url ? [p.image_url] : []),
+  }))
 }
