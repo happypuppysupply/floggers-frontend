@@ -12,8 +12,12 @@ interface PageProps {
   params: { id: string };
 }
 
+function isUUID(str: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = await getProductById(params.id);
+  const product = isUUID(params.id) ? await getProductById(params.id) : null;
   if (!product) {
     return { title: 'Product Not Found' };
   }

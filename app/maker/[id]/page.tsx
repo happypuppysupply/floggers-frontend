@@ -5,15 +5,15 @@ import ProductCard from '@/components/ProductCard';
 import FollowButton from '@/components/FollowButton';
 import { Star, MapPin, Award, Calendar, Package, Users } from 'lucide-react';
 
+function isUUID(str: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+}
+
 export default async function MakerPage({ params }: { params: { id: string } }) {
   const id = params.id
   
-  // Try by ID first, then by slug
-  let maker = await getMakerById(id);
-  
-  if (!maker) {
-    maker = await getMakerBySlug(id);
-  }
+  // If it's a UUID, look up by ID. Otherwise look up by slug.
+  let maker = isUUID(id) ? await getMakerById(id) : await getMakerBySlug(id);
 
   if (!maker) {
     notFound();
