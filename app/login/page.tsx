@@ -31,16 +31,17 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Redirect based on role
+      // Redirect based on role - buyers to home, makers to dashboard
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single()
+        .maybeSingle()
 
       if (profile?.role === 'maker') {
         router.push('/dashboard')
       } else {
+        // Default to home for buyers or if profile not found
         router.push('/')
       }
       router.refresh()

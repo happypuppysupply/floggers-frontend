@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/lib/auth/AuthProvider'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import BecomeSellerFloater from '@/components/BecomeSellerFloater'
 
 export const metadata: Metadata = {
   title: 'Floggers — BDSM Marketplace',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <BecomeSellerFloater />
         </AuthProvider>
       </body>
     </html>
