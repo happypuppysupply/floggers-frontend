@@ -266,7 +266,8 @@ export default function MessagesPage() {
                     </p>
                   </div>
                 </button>
-              ))
+              )
+            })
             )}
           </div>
         </div>
