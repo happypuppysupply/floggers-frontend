@@ -196,7 +196,6 @@ export default function MessagesPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const activeConversation = conversations.find(c => c.id === activeId)
   const filteredConversations = conversations.filter(c => {
     if (!search) return true
     const name = `${c.other_user?.first_name || ''} ${c.other_user?.last_name || ''}`.toLowerCase()
