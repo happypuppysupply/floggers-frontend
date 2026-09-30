@@ -1,90 +1,90 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Star, Loader2, CheckCircle, MessageSquare } from 'lucide-react'
+import { Star, Loader2, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { getReviews, createReview, userPurchasedProduct } from '@/lib/data'
 
 interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  is_verified_purchase: boolean;
-  seller_response?: string;
-  seller_response_at?: string;
+  id: string
+  rating: number
+  comment: string
+  created_at: string
+  is_verified_purchase: boolean
+  seller_response?: string
+  seller_response_at?: string
   user: {
-    first_name: string;
-    last_name: string;
-    avatar_url?: string;
-  };
+    first_name: string
+    last_name: string
+    avatar_url?: string
+  }
 }
 
-interface ProductReviewsProps {
-  productId: string;
-}
-
-export default function ProductReviews({ productId }: ProductReviewsProps) {
-  const { user } = useAuth();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
+export default function ProductReviews({ productId }: { productId: string }) {
+  const { user } = useAuth()
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasPurchased, setHasPurchased] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
 
   useEffect(() => {
-    loadReviews();
-  }, [productId]);
+    loadReviews()
+  }, [productId])
 
   useEffect(() => {
     if (user) {
-      checkPurchaseStatus();
+      checkPurchaseStatus()
     }
-  }, [user]);
+  }, [user])
 
   const loadReviews = async () => {
-    setLoading(true);
-    const data = await getReviews(productId);
-    setReviews(data);
-    setLoading(false);
-  };
+    setLoading(true)
+    const data = await getReviews(productId)
+    setReviews(data)
+    setLoading(false)
+  }
 
   const checkPurchaseStatus = async () => {
-    if (!user) return;
-    const purchased = await userPurchasedProduct(user.id, productId);
-    setHasPurchased(purchased);
-  };
+    if (!user) return
+    const purchased = await userPurchasedProduct(user.id, productId)
+    setHasPurchased(purchased)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || rating === 0) return;
+    e.preventDefault()
+    if (!user || rating === 0) return
 
-    setSubmitting(true);
+    setSubmitting(true)
     const result = await createReview({
       user_id: user.id,
       product_id: productId,
       rating,
       comment
-    });
+    })
 
     if (result.success) {
-      setShowForm(false);
-      setRating(0);
-      setComment('');
-      await loadReviews();
+      setShowForm(false)
+      setRating(0)
+      setComment('')
+      await loadReviews()
     }
 
-    setSubmitting(false);
-  };
+    setSubmitting(false)
+  }
 
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length 
-    : 0;
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
+    : 0
 
   if (loading) {
-    return <div className="py-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-rose" /></div>;
+    return (
+      <div className="py-8 text-center">
+        <Loader2 size={24} className="animate-spin mx-auto text-rose" />
+      </div>
+    )
   }
 
   return (
@@ -122,7 +122,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           ) : !hasPurchased ? (
             <p className="text-sm text-noir-400 mb-2">Only verified purchasers can leave reviews</p>
           ) : null}
-          
+
           {hasPurchased && (
             <button
               onClick={() => setShowForm(true)}
@@ -131,9 +131,9 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               Write a review
             </button>
           )}
-          
+
           {!user && (
-            <a href={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="btn-secondary text-sm">
+            <a href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`} className="btn-secondary text-sm">
               Sign in to review
             </a>
           )}
@@ -141,7 +141,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       ) : (
         <form onSubmit={handleSubmit} className="card-glass p-6 mb-8">
           <h3 className="text-sm font-medium text-noir-200 mb-4">Share your experience</h3>
-          
+
           <div className="mb-4">
             <label className="block text-xs text-noir-400 mb-2">Rating</label>
             <div className="flex gap-1">
@@ -160,7 +160,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               ))}
             </div>
           </div>
-          
+
           <div className="mb-4">
             <label className="block text-xs text-noir-400 mb-2">Review</label>
             <textarea
@@ -171,7 +171,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               placeholder="Share your thoughts about this product..."
             />
           </div>
-          
+
           <div className="flex gap-3">
             <button
               type="button"
@@ -201,10 +201,10 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex items-center gap-3">
                   {review.user?.avatar_url ? (
-                    <img 
-                      src={review.user.avatar_url} 
-                      alt="" 
-                      className="w-10 h-10 rounded-full object-cover" 
+                    <img
+                      src={review.user.avatar_url}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-rose-dark flex items-center justify-center text-rose">
@@ -233,22 +233,21 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   ))}
                 </div>
               </div>
-              
+
               <p className="text-sm text-noir-200 mt-2">{review.comment}</p>
-              
+
               {review.seller_response && (
                 <div className="mt-4 ml-4 pl-4 border-l-2 border-rose/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <MessageSquare size={14} className="text-rose" />
                     <span className="text-xs font-medium text-rose">Response from seller</span>
                   </div>
                   <p className="text-sm text-noir-300">{review.seller_response}</p>
                 </div>
               )}
             </div>
-          ))}
+          ))
         )}
       </div>
     </div>
-  );
+  )
 }
