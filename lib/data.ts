@@ -526,3 +526,126 @@ export async function sendMessage({ conversation_id, sender_id, content }: any) 
 
   return { success: true, data };
 }
+
+// ============================================
+// DASHBOARD FUNCTIONS
+// ============================================
+
+export async function getDashboardStats(makerId: string) {
+  const supabase = createClient();
+  
+  // Get total sales
+  const { data: salesData, error: salesError } = await supabase
+    .from('order_items')
+    .select('quantity, price')
+    .eq('maker_id', makerId);
+  
+  if (salesError) {
+    console.error('Error fetching sales:', salesError);
+  }
+  
+  const totalSales = salesData?.reduce((sum, item) => sum + (item.quantity * item.price), 0) || 0;
+  const totalOrders = salesData?.length || 0;
+  
+  // Get product count
+  const { count: productCount, error: productError } = await supabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('maker_id', makerId);
+  
+  // Get unique customers
+  const { data: customersData, error: customersError } = await supabase
+    .from('orders')
+    .select('user_id')
+    .eq('items.maker_id', makerId)
+    .not('user_id', 'is', null);
+  
+  const uniqueCustomers = customersData ? [...new Set(customersData.map(o => o.user_id))].length : 0;
+  
+  return {
+    totalSales,
+    totalOrders,
+    productCount: productCount || 0,
+    customerCount: uniqueCustomers
+  };
+}
+
+export async function getMakerOrders(makerId: string, status?: string) {
+  const supabase = createClient();
+  
+  let query = supabase
+    .from('orders')
+    .select(`
+      *,
+      items:order_items(
+        *,
+        product:products(name, image_url, id)
+      ),
+      user:profiles(email, first_name, last_name)
+    `)
+    .eq('items.maker_id', makerId)
+    .order('created_at', { ascending: false });
+  
+  if (status) {
+    query = query.eq('status', status);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching maker orders:', error);
+    return [];
+  }
+  
+  return data || [];
+}
+
+export async function updateOrderStatus(orderId: string, newStatus: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: newStatus })
+    .eq('id', orderId);
+  
+  if (error) {
+    console.error('Error updating order:', error);
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true };
+}
+
+// Start or get conversation
+export async function getOrCreateConversation(user1Id: string, user2Id: string) {
+  const supabase = createClient();
+  
+  // Check if conversation exists
+  const { data: existingConv, error: findError } = await supabase
+    .from('conversations')
+    .select('*')
+    .or(`user1_id.eq.${user1Id},user2_id.eq.${user1Id}`)
+    .or(`user1_id.eq.${user2Id},user2_id.eq.${user2Id}`)
+    .single();
+  
+  if (existingConv) {
+    return existingConv;
+  }
+  
+  // Create new conversation
+  const { data: newConv, error: createError } = await supabase
+    .from('conversations')
+    .insert({
+      user1_id: user1Id,
+      user2_id: user2Id
+    })
+    .select()
+    .single();
+  
+  if (createError) {
+    console.error('Error creating conversation:', createError);
+    return null;
+  }
+  
+  return newConv;
+}
