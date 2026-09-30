@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -10,11 +11,12 @@ import {
   BarChart3, 
   Settings,
   Store,
-  MessageSquare,
   MessageCircle,
   LogOut,
   ChevronRight,
-  Wallet
+  Wallet,
+  Menu,
+  X
 } from 'lucide-react'
 
 const navItems = [
@@ -31,16 +33,38 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="min-h-screen flex">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-noir-900 border-r border-noir-800/50 flex flex-col fixed h-full">
-        <div className="p-6 border-b border-noir-800/50">
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        w-64 bg-noir-900 border-r border-noir-800/50 
+        flex flex-col h-full
+        transform transition-transform duration-300 ease-in-out
+        lg:transform-none
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-4 lg:p-6 border-b border-noir-800/50 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-lg font-serif italic text-noir-50">Floggers</span>
             <span className="text-[10px] uppercase tracking-widest text-rose-muted border border-rose-muted/30 px-1.5 py-0.5 rounded">Maker</span>
           </Link>
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 text-noir-400 hover:text-noir-200"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -51,6 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
                   isActive 
                     ? 'bg-rose-dark/20 text-rose border border-rose/20' 
@@ -83,8 +108,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-64">
-        {children}
+      <main className="flex-1 lg:ml-0 min-w-0">
+        {/* Mobile Header */}
+        <div className="lg:hidden sticky top-0 z-30 bg-noir-900/95 backdrop-blur border-b border-noir-800/50 px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-lg font-serif italic text-noir-50">Floggers</span>
+            <span className="text-[10px] uppercase tracking-widest text-rose-muted border border-rose-muted/30 px-1.5 py-0.5 rounded">Maker</span>
+          </Link>
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 text-noir-200 hover:text-rose transition-colors"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
+
+        {/* Page Content */}
+        <div className="p-4 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   )
