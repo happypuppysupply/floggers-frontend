@@ -229,53 +229,40 @@ export default function ApplicationStatusPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-noir-950 p-6 rounded-xl border border-noir-800">
-                <div className="flex items-start gap-4">
-                  <Camera className="w-6 h-6 text-rose mt-1" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-noir-100 mb-1">Photo ID Upload</h3>
-                    <p className="text-sm text-noir-400 mb-3">
-                      Upload a photo of your government-issued ID (driver's license, passport, etc.)
-                    </p>
-                    <button className="btn-secondary text-sm">
-                      <Upload size={16} className="inline mr-2" />
-                      Upload ID Photo
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-noir-950 p-6 rounded-xl border border-noir-800">
-                <div className="flex items-start gap-4">
-                  <UserCheck className="w-6 h-6 text-rose mt-1" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-noir-100 mb-1">Selfie Verification</h3>
-                    <p className="text-sm text-noir-400 mb-3">
-                      Take a selfie to verify you match your ID photo
-                    </p>
-                    <button className="btn-secondary text-sm">
-                      <Camera size={16} className="inline mr-2" />
-                      Take Selfie
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <button 
-                  onClick={() => {
-                    // Demo: mark as verified
-                    supabase.from('maker_applications').update({ id_verified: true }).eq('user_id', user?.id).then(() => {
-                      setCurrentStep(2)
-                      loadApplicationStatus()
-                    })
-                  }}
-                  className="btn-primary"
-                >
-                  Continue <ChevronRight size={16} className="inline" />
-                </button>
-              </div>
+            <div className="bg-noir-950 p-6 rounded-xl border border-noir-800 mb-6">
+              <p className="text-noir-300 mb-4">
+                We use a secure third-party verification service to confirm your identity. 
+                This process typically takes 2-3 minutes.
+              </p>
+              <ul className="text-sm text-noir-400 space-y-2 mb-6">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-400" />
+                  Upload a valid government-issued ID
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-400" />
+                  Take a live selfie to verify your identity
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-400" />
+                  Your data is encrypted and secure
+                </li>
+              </ul>
+              
+              <button 
+                onClick={() => {
+                  // In production, this would redirect to Stripe Identity or similar
+                  // For now, mark as verified for demo
+                  supabase.from('maker_applications').update({ id_verified: true }).eq('user_id', user?.id).then(() => {
+                    setCurrentStep(2)
+                    loadApplicationStatus()
+                  })
+                }}
+                className="btn-primary w-full"
+              >
+                Start Verification Process
+                <ChevronRight size={16} className="inline ml-2" />
+              </button>
             </div>
           </div>
         )}

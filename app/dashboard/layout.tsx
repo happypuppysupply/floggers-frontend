@@ -27,6 +27,7 @@ const navItems = [
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/dashboard/messages', label: 'Messages', icon: MessageCircle },
+  { href: '/dashboard/reviews', label: 'Reviews', icon: Star },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
   { href: '/dashboard/customers', label: 'Customers', icon: Users },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },

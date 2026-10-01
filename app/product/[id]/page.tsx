@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { Metadata } from 'next';
+import Link from 'next/link';
 import { getProductById, getProductBySlug, getMakerFollowerCount } from '@/lib/data';
 import AddToCartClient from '@/components/AddToCartClient';
 import ProductReviews from '@/components/ProductReviews';
@@ -105,12 +105,12 @@ export default async function ProductPage({ params }: PageProps) {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <a 
+                <Link 
                   href={`/maker/${product.maker?.slug || product.maker_id}`}
                   className="text-sm font-medium text-noir-100 hover:text-rose transition-colors block truncate"
                 >
                   {product.maker?.name}
-                </a>
+                </Link>
                 <div className="flex items-center gap-3 mt-1">
                   {product.maker?.rating && (
                     <span className="text-xs text-amber-400 flex items-center gap-1">
@@ -196,12 +196,12 @@ export default async function ProductPage({ params }: PageProps) {
 
           {/* Maker quick actions */}
           <div className="flex gap-3">
-            <a 
+            <Link 
               href={`/maker/${product.maker?.slug || product.maker_id}`}
               className="flex-1 btn-secondary text-sm inline-flex items-center justify-center gap-2"
             >
               <Store size={16} /> Visit shop
-            </a>
+            </Link>
             <button className="flex-1 btn-secondary text-sm inline-flex items-center justify-center gap-2">
               <MessageSquare size={16} /> Message maker
             </button>
