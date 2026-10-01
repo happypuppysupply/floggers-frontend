@@ -5,6 +5,11 @@ import { Save, Check, Loader2, Upload, X, Camera, Image as ImageIcon } from 'luc
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
+// These are the ONLY columns that exist in the makers table (before migration 007)
+// id, profile_id, slug, name, tagline, bio, location, since, rating, products_count, 
+// image_url, featured, is_verified, created_at, updated_at
+// DO NOT add fields here unless the column exists in the database schema
+
 export default function SettingsPage() {
   const { user } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -15,11 +20,9 @@ export default function SettingsPage() {
   const [form, setForm] = useState({
     name: '',
     tagline: '',
-    email: '',
     location: '',
     website: '',
     bio: '',
-    instagram: '',
   })
   const [avatarUrl, setAvatarUrl] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
@@ -47,11 +50,9 @@ export default function SettingsPage() {
       setForm({
         name: maker.name || '',
         tagline: maker.tagline || '',
-        email: maker.email || user.email || '',
         location: maker.location || '',
         website: maker.website || '',
         bio: maker.bio || '',
-        instagram: maker.instagram || '',
       })
       setAvatarUrl(maker.avatar_url || '')
       setCoverUrl(maker.cover_image_url || '')
@@ -67,15 +68,10 @@ export default function SettingsPage() {
         setForm({
           name: application.shop_name || '',
           tagline: application.category || '',
-          email: application.applicant_email || user.email || '',
           location: application.location || '',
           website: application.website || '',
           bio: application.description || '',
-          instagram: application.instagram || '',
         })
-      } else {
-        // Pre-fill email from user
-        setForm(prev => ({ ...prev, email: user.email || '' }))
       }
     }
     
@@ -135,7 +131,8 @@ export default function SettingsPage() {
     
     let saveError;
     
-    // Only include fields that exist in the makers table
+    // ONLY use columns that exist in the base makers schema
+    // If migration 007 hasn't been run, these extra columns will fail
     const makerData: any = {
       name: form.name,
       tagline: form.tagline,
@@ -145,10 +142,10 @@ export default function SettingsPage() {
       updated_at: new Date().toISOString(),
     }
     
-    // Only add optional columns if they exist (migration may not be run yet)
+    // Only add image columns if they have values (migration 007 adds these)
+    // This way if migration hasn't run, we don't error on empty values
     if (avatarUrl) makerData.avatar_url = avatarUrl
     if (coverUrl) makerData.cover_image_url = coverUrl
-    if (form.instagram) makerData.instagram = form.instagram
     
     if (existingMaker) {
       // Update existing maker
@@ -277,16 +274,6 @@ export default function SettingsPage() {
             <h2 className="text-lg font-medium text-noir-100 mb-4">Contact & Location</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-noir-300 mb-1">Shop Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50"
-                  placeholder="shop@example.com"
-                />
-              </div>
-              <div>
                 <label className="block text-sm text-noir-300 mb-1">Location *</label>
                 <input
                   type="text"
@@ -306,19 +293,6 @@ export default function SettingsPage() {
                   className="w-full bg-noir-950 border border-noir-700 rounded-lg px-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50"
                   placeholder="https://..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm text-noir-300 mb-1">Instagram</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-noir-500 text-sm">@</span>
-                  <input
-                    type="text"
-                    value={form.instagram}
-                    onChange={e => setForm({ ...form, instagram: e.target.value })}
-                    className="w-full bg-noir-950 border border-noir-700 rounded-lg pl-8 pr-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50"
-                    placeholder="username"
-                  />
-                </div>
               </div>
             </div>
           </div>
