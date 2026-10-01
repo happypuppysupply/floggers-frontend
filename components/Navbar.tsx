@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ShoppingBag, Menu, X, User, LogOut } from 'lucide-react'
+import { ShoppingBag, Menu, X, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
+import BrandLogo from './BrandLogo'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
@@ -19,8 +20,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-serif italic tracking-wide text-noir-50">Floggers</span>
-            <span className="text-[10px] uppercase tracking-widest text-rose-muted border border-rose-muted/30 px-1.5 py-0.5 rounded">Marketplace</span>
+            <BrandLogo size={28} showText={true} />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -45,16 +45,10 @@ export default function Navbar() {
                       <LogOut size={16} />
                       Sign Out
                     </button>
-                    <div className="flex items-center gap-2 text-sm text-noir-200">
-                      <User size={16} />
-                      <span className="max-w-[100px] truncate">
-                        {profile?.email?.split('@')[0] || 'User'}
-                      </span>
-                    </div>
                   </>
                 ) : (
                   <>
-                    <Link href="/login" className="text-sm text-rose hover:text-rose-light transition-colors">
+                    <Link href="/login" className="text-sm text-violet hover:text-violet-light transition-colors">
                       Sign In
                     </Link>
                     <Link href="/maker/signup" className="btn-primary text-xs py-2 px-4">
@@ -94,7 +88,7 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" onClick={() => setOpen(false)} className="block text-rose hover:text-rose-light py-2">Sign In</Link>
+                  <Link href="/login" onClick={() => setOpen(false)} className="block text-violet hover:text-violet-light py-2">Sign In</Link>
                   <Link href="/maker/signup" onClick={() => setOpen(false)} className="block btn-primary text-center text-xs py-2.5 mt-2">Sell on Floggers</Link>
                 </>
               )}

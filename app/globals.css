@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-noir-950 text-noir-50 antialiased;
+    @apply bg-brand-surface text-noir-50 antialiased;
     font-family: system-ui, -apple-system, sans-serif;
   }
   h1, h2, h3, h4 {
@@ -17,20 +17,91 @@
     @apply bg-noir-900/80 border border-noir-800/50 backdrop-blur-sm rounded-xl;
   }
   .btn-primary {
-    @apply bg-rose-dark hover:bg-rose text-noir-50 px-6 py-3 rounded-lg transition-all duration-300 font-medium;
+    @apply bg-violet-dark hover:bg-violet text-noir-50 px-6 py-3 rounded-lg transition-all duration-300 font-medium;
+    box-shadow: 0 0 30px rgba(155, 77, 202, 0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 40px rgba(155, 77, 202, 0.5);
   }
   .btn-secondary {
-    @apply border border-noir-700 hover:border-rose text-noir-200 hover:text-noir-50 px-6 py-3 rounded-lg transition-all duration-300;
+    @apply border border-noir-700 hover:border-violet text-noir-200 hover:text-noir-50 px-6 py-3 rounded-lg transition-all duration-300;
+  }
+  .btn-secondary:hover {
+    box-shadow: 0 0 20px rgba(155, 77, 202, 0.2);
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #d4a5e0 0%, #9b4dca 50%, #c05a9e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .glow-violet {
+    box-shadow: 0 0 60px rgba(155, 77, 202, 0.4);
   }
 }
 
+/* Animated Avatar Loader */
+@keyframes avatar-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes avatar-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes avatar-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(155, 77, 202, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(155, 77, 202, 0.8));
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.avatar-loader {
+  animation: avatar-float 3s ease-in-out infinite, avatar-glow 2s ease-in-out infinite;
+}
+
+.avatar-pulse {
+  animation: avatar-pulse 2s ease-in-out infinite;
+}
+
+.spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0c;
+  background: #0a0a0f;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a2e;
+  background: #2a2235;
   border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d3248;
 }

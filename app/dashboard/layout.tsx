@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user } = useAuth()
-  const [makerInfo, setMakerInfo] = useState<{ name: string; isVerified: boolean } | null>(null)
+  const [makerInfo, setMakerInfo] = useState<{ name: string; isVerified: boolean; avatar_url?: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Load maker info
@@ -54,12 +54,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       // Try to get maker record
       const { data: maker } = await supabase
         .from('makers')
-        .select('name, is_verified')
+        .select('name, is_verified, avatar_url')
         .eq('profile_id', user.id)
         .maybeSingle()
 
       if (maker) {
-        setMakerInfo({ name: maker.name, isVerified: maker.is_verified })
+        setMakerInfo({ name: maker.name, isVerified: maker.is_verified, avatar_url: maker.avatar_url })
       } else {
         // Check for pending application
         const { data: app } = await supabase
@@ -78,6 +78,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     loadMaker()
   }, [user])
+
+  // Get initials for avatar fallback
+  const getInitials = (name: string) => {
+    if (!name) return 'M'
+    const words = name.split(' ')
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -138,34 +148,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 border-t border-noir-800/50">
-          <div className="flex items-center gap-3 mb-4 px-4 py-2">
-            <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center">
+          <div className="flex items-center gap-3 mb-4 px-2 py-2">
+            <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0 overflow-hidden">
               {loading ? (
                 <Loader2 size={16} className="text-noir-200 animate-spin" />
+              ) : makerInfo?.avatar_url ? (
+                <img src={makerInfo.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-sm font-medium text-noir-200">
-                  {(makerInfo?.name || user?.email?.[0] || 'M').toUpperCase()}
+                <span className="text-xs font-medium text-noir-200">
+                  {getInitials(makerInfo?.name || user?.email || 'M')}
                 </span>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-noir-200 truncate">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <p className="text-sm font-medium text-noir-200 truncate leading-tight">
                 {loading ? 'Loading...' : (makerInfo?.name || 'Your Shop')}
               </p>
-              <div className="flex items-center gap-1">
+              <p className="text-[10px] truncate mt-0.5">
                 {makerInfo ? (
                   makerInfo.isVerified ? (
-                    <span className="text-xs text-emerald-400">Verified Maker</span>
+                    <span className="text-emerald-400">✓ Verified Maker</span>
                   ) : (
-                    <span className="text-xs text-amber-400">Pending Approval</span>
+                    <span className="text-amber-400"> Pending Approval</span>
                   )
                 ) : (
-                  <span className="text-xs text-noir-500">Maker</span>
+                  <span className="text-noir-500">Maker</span>
                 )}
-              </div>
+              </p>
             </div>
           </div>
-          <Link href="/" className="flex items-center gap-3 px-4 py-3 text-sm text-noir-400 hover:text-noir-200 transition-colors">
+          <Link href="/" className="flex items-center gap-3 px-2 py-2 text-sm text-noir-400 hover:text-noir-200 transition-colors">
             <LogOut size={18} />
             Log Out
           </Link>

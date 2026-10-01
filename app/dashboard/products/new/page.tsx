@@ -81,19 +81,21 @@ export default function AddProductPage() {
       // Check if they have a pending application
       const { data: application } = await supabase
         .from('maker_applications')
-        .select('id, status')
+        .select('id, shop_name, location, description, status')
         .eq('user_id', user.id)
         .maybeSingle()
       
       if (application) {
         // Create maker record from application so they can add products
-        const slug = user.email?.split('@')[0] || `maker-${Date.now()}`
+        const slug = application.shop_name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || `maker-${Date.now()}`
         const { data: newMaker, error: createError } = await supabase
           .from('makers')
           .insert({
             profile_id: user.id,
-            name: 'Your Shop', // Will be updated in settings
-            slug: slug,
+            name: application.shop_name || 'Your Shop',
+            slug: slug || `maker-${Date.now()}`,
+            location: application.location || '',
+            bio: application.description || '',
             is_verified: false,
             is_active: true,
             rating: 0,
@@ -103,7 +105,7 @@ export default function AddProductPage() {
           .single()
         
         if (createError || !newMaker) {
-          setError('You must complete your shop setup in Settings before adding products.')
+          setError('Error creating your shop. Please try again or contact support.')
           setSubmitting(false)
           return
         }

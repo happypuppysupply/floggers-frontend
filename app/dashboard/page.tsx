@@ -3,14 +3,23 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/AuthProvider'
-import { getDashboardStats, getMakerById } from '@/lib/data'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Package, Users, ArrowUpRight } from 'lucide-react'
+import { getDashboardStats } from '@/lib/data'
+import { createClient } from '@/lib/supabase/client'
+import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Package, Users, ArrowUpRight, CheckCircle, Circle, Loader2 } from 'lucide-react'
 
 interface DashboardStats {
   totalSales: number;
   totalOrders: number;
   productCount: number;
   customerCount: number;
+}
+
+interface OnboardingProgress {
+  profile_complete: boolean;
+  has_products: boolean;
+  shipping_setup: boolean;
+  shop_shared: boolean;
+  progress_percent: number;
 }
 
 export default function DashboardOverview() {
@@ -21,31 +30,47 @@ export default function DashboardOverview() {
     productCount: 0,
     customerCount: 0
   })
+  const [onboarding, setOnboarding] = useState<OnboardingProgress>({
+    profile_complete: false,
+    has_products: false,
+    shipping_setup: false,
+    shop_shared: false,
+    progress_percent: 0
+  })
   const [loading, setLoading] = useState(true)
-  const [makerName, setMakerName] = useState('')
+  const [makerInfo, setMakerInfo] = useState<{ id: string; name: string; location?: string } | null>(null)
 
   useEffect(() => {
-    const loadStats = async () => {
+    const loadData = async () => {
       if (!user) return
 
+      const supabase = createClient()
+      
       // Get maker profile
-      const supabase = (await import('@/lib/supabase/client')).createClient()
       const { data: maker } = await supabase
         .from('makers')
-        .select('id, name')
+        .select('id, name, location')
         .eq('profile_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (maker) {
-        setMakerName(maker.name)
+        setMakerInfo(maker)
         const stats = await getDashboardStats(maker.id)
         setStats(stats)
+        
+        // Get onboarding progress
+        const { data: progress } = await supabase
+          .rpc('get_maker_onboarding_progress', { p_profile_id: user.id })
+        
+        if (progress) {
+          setOnboarding(progress)
+        }
       }
 
       setLoading(false)
     }
 
-    loadStats()
+    loadData()
   }, [user])
 
   const statCards = [
@@ -79,12 +104,54 @@ export default function DashboardOverview() {
     },
   ]
 
+  const gettingStartedSteps = [
+    { 
+      step: 1, 
+      label: 'Complete your shop profile', 
+      href: '/dashboard/settings', 
+      done: onboarding.profile_complete,
+      description: 'Add your shop name, bio, and logo'
+    },
+    { 
+      step: 2, 
+      label: 'Add your first product', 
+      href: '/dashboard/products/new', 
+      done: onboarding.has_products,
+      description: 'List your first item for sale'
+    },
+    { 
+      step: 3, 
+      label: 'Set up shipping details', 
+      href: '/dashboard/settings', 
+      done: onboarding.shipping_setup,
+      description: 'Add your location and shipping preferences'
+    },
+    { 
+      step: 4, 
+      label: 'Share your shop link', 
+      href: makerInfo ? `/maker/${makerInfo.id}` : '/', 
+      done: onboarding.shop_shared,
+      description: 'Start promoting your shop',
+      external: true
+    },
+  ]
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={32} className="text-rose animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="font-serif italic text-2xl text-noir-50 mb-2">Dashboard Overview</h1>
         <p className="text-sm text-noir-400">
-          {makerName ? `Welcome back, ${makerName}` : 'Loading...'}
+          {makerInfo?.name ? `Welcome back, ${makerInfo.name}` : 'Welcome to your shop dashboard'}
         </p>
       </div>
 
@@ -101,7 +168,7 @@ export default function DashboardOverview() {
                 </span>
               </div>
               <p className="text-2xl font-medium text-noir-50">
-                {loading ? '—' : stat.value}
+                {stat.value}
               </p>
               <p className="text-xs text-noir-400">{stat.label}</p>
             </div>
@@ -139,30 +206,43 @@ export default function DashboardOverview() {
 
         {/* Getting Started */}
         <div className="card-glass p-6">
-          <h2 className="text-lg font-medium text-noir-100 mb-6">Getting Started</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-medium text-noir-100">Getting Started</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-noir-400">{onboarding.progress_percent}% complete</span>
+              <div className="w-24 h-2 bg-noir-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-rose to-emerald-400 transition-all duration-500"
+                  style={{ width: `${onboarding.progress_percent}%` }}
+                />
+              </div>
+            </div>
+          </div>
           <div className="space-y-3">
-            {[
-              { step: 1, label: 'Complete your shop profile', href: '/dashboard/settings', done: makerName !== '' },
-              { step: 2, label: 'Add your first product', href: '/dashboard/products/new', done: stats.productCount > 0 },
-              { step: 3, label: 'Set up shipping details', href: '/dashboard/settings', done: false },
-              { step: 4, label: 'Share your shop link', href: '/', done: false },
-            ].map((item) => (
+            {gettingStartedSteps.map((item) => (
               <Link 
                 key={item.step}
                 href={item.href}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                target={item.external ? '_blank' : undefined}
+                className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
                   item.done ? 'bg-emerald-500/10' : 'bg-noir-900/50 hover:bg-noir-800/50'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   item.done ? 'bg-emerald-500 text-noir-50' : 'bg-noir-800 text-noir-400'
                 }`}>
-                  {item.done ? '✓' : item.step}
+                  {item.done ? <CheckCircle size={16} /> : item.step}
                 </div>
-                <span className={`text-sm ${item.done ? 'text-emerald-400' : 'text-noir-200'}`}>
-                  {item.label}
-                </span>
-                {item.done && <ArrowUpRight size={14} className="ml-auto text-emerald-400" />}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${item.done ? 'text-emerald-400' : 'text-noir-200'}`}>
+                      {item.label}
+                    </span>
+                    {item.done && <CheckCircle size={12} className="text-emerald-400" />}
+                  </div>
+                  <p className="text-xs text-noir-500 mt-0.5">{item.description}</p>
+                </div>
+                {!item.done && <ArrowUpRight size={14} className="text-noir-500 shrink-0" />}
               </Link>
             ))}
           </div>
