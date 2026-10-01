@@ -1,14 +1,32 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingBag, Menu, X, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
+import { createClient } from '@/lib/supabase/client'
 import BrandLogo from './BrandLogo'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const [cartCount, setCartCount] = useState(0)
   const { user, profile, loading, signOut } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      loadCartCount()
+    }
+  }, [user])
+
+  const loadCartCount = async () => {
+    const supabase = createClient()
+    const { count } = await supabase
+      .from('cart_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user?.id)
+    
+    setCartCount(count || 0)
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -26,8 +44,15 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-8">
             <Link href="/category" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">Browse</Link>
             <Link href="/makers" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">Makers</Link>
-            <Link href="/cart" className="flex items-center gap-2 text-sm text-noir-300 hover:text-noir-50 transition-colors">
-              <ShoppingBag size={18} />
+            <Link href="/cart" className="flex items-center gap-2 text-sm text-noir-300 hover:text-noir-50 transition-colors relative">
+              <div className="relative">
+                <ShoppingBag size={18} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </div>
               <span>Cart</span>
             </Link>
             
@@ -70,8 +95,16 @@ export default function Navbar() {
         <div className="md:hidden border-t border-noir-800/50 bg-noir-950 px-4 pb-4 space-y-3">
           <Link href="/category" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Browse</Link>
           <Link href="/makers" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Makers</Link>
-          <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
-            <ShoppingBag size={18} /> Cart
+          <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2 relative">
+            <div className="relative">
+              <ShoppingBag size={18} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </div>
+            Cart
           </Link>
           
           {!loading && (
