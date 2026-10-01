@@ -49,7 +49,7 @@ export default function CustomersPage() {
         quantity,
         order:orders(
           user_id,
-          user:profiles(email, first_name, last_name),
+          user:profiles(email, full_name),
           created_at
         )
       `)
@@ -74,8 +74,8 @@ export default function CustomersPage() {
       } else {
         customerMap.set(userId, {
           user_id: userId,
-          name: userData?.first_name 
-            ? `${userData.first_name} ${userData.last_name?.[0] || ''}`.trim()
+          name: userData?.full_name 
+            ? userData.full_name
             : userData?.email?.split('@')[0] || 'Unknown',
           email: userData?.email || 'Unknown',
           orders: 1,

@@ -14,8 +14,7 @@ interface Review {
   seller_response?: string
   seller_response_at?: string
   user: {
-    first_name: string
-    last_name: string
+    full_name: string
     avatar_url?: string
   }
 }
@@ -208,12 +207,12 @@ export default function ProductReviews({ productId }: { productId: string }) {
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-rose-dark flex items-center justify-center text-rose">
-                      {review.user?.first_name?.[0] || '?'}
+                      {review.user?.full_name?.[0] || '?'}
                     </div>
                   )}
                   <div>
                     <p className="text-sm font-medium text-noir-100">
-                      {review.user?.first_name} {review.user?.last_name?.[0]}.
+                      {review.user?.full_name}
                     </p>
                     {review.is_verified_purchase && (
                       <div className="flex items-center gap-1 text-xs text-emerald-400">

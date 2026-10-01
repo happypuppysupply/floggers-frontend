@@ -344,7 +344,7 @@ export async function getReviews(productId: string) {
     .from('reviews')
     .select(`
       *,
-      user:profiles(first_name, last_name, avatar_url)
+      user:profiles(full_name, avatar_url)
     `)
     .eq('product_id', productId)
     .order('created_at', { ascending: false });
@@ -533,7 +533,7 @@ export async function getMessages(conversationId: string) {
     .from('messages')
     .select(`
       *,
-      sender:profiles(first_name, last_name, avatar_url)
+      sender:profiles(full_name, avatar_url)
     `)
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
@@ -643,7 +643,7 @@ export async function getMakerOrders(makerId: string, status?: string) {
         *,
         product:products(name, image_url, id)
       ),
-      user:profiles(email, first_name, last_name)
+      user:profiles(email, full_name)
     `)
     .in('id', orderIds)
     .order('created_at', { ascending: false });
@@ -682,13 +682,15 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
 export async function getOrCreateConversation(user1Id: string, user2Id: string) {
   const supabase = createClient();
   
-  // Check if conversation exists
-  const { data: existingConv, error: findError } = await supabase
+  // Check if conversation exists — find all conversations user1 is in
+  const { data: existingConvs, error: findError } = await supabase
     .from('conversations')
     .select('*')
-    .or(`user1_id.eq.${user1Id},user2_id.eq.${user1Id}`)
-    .or(`user1_id.eq.${user2Id},user2_id.eq.${user2Id}`)
-    .single();
+    .or(`user1_id.eq.${user1Id},user2_id.eq.${user1Id}`);
+  
+  const existingConv = existingConvs?.find(c =>
+    c.user1_id === user2Id || c.user2_id === user2Id
+  );
   
   if (existingConv) {
     return existingConv;

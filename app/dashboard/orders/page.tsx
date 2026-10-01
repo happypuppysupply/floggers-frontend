@@ -15,8 +15,7 @@ interface Order {
   shipping_address: any;
   user: {
     email: string;
-    first_name?: string;
-    last_name?: string;
+    full_name?: string;
   };
   items: {
     id: string;
@@ -83,8 +82,8 @@ export default function OrdersPage() {
   }
 
   const getCustomerName = (order: Order) => {
-    if (order.user?.first_name) {
-      return `${order.user.first_name} ${order.user.last_name?.[0] || ''}`.trim()
+    if (order.user?.full_name) {
+      return order.user.full_name
     }
     return order.user?.email?.split('@')[0] || 'Guest'
   }

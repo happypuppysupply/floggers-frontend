@@ -13,8 +13,7 @@ interface Message {
   created_at: string;
   read: boolean;
   sender?: {
-    first_name?: string;
-    last_name?: string;
+    full_name?: string;
   };
 }
 
@@ -24,9 +23,9 @@ interface Conversation {
   user2_id: string;
   updated_at: string;
   other_user?: {
-    first_name?: string;
-    last_name?: string;
+    full_name?: string;
     email?: string;
+    avatar_url?: string;
   };
 }
 
@@ -50,13 +49,14 @@ export default function MessagesPage() {
       
       // Check if AI conversation exists, if not create it
       const supabase = createClient()
-      const { data: existingConv } = await supabase
+      const { data: existingConvs } = await supabase
         .from('conversations')
-        .select('id')
-        .or(
-          `and(user1_id.eq.${user.id},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${user.id})`
-        )
-        .maybeSingle()
+        .select('id, user1_id, user2_id')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+      
+      const existingConv = existingConvs?.find(c =>
+        c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
+      )
       
       if (!existingConv) {
         // Create AI conversation with welcome message
@@ -138,8 +138,7 @@ Happy exploring! 🔥`,
             return {
               ...conv,
               other_user: {
-                first_name: AI_BOT_NAME,
-                last_name: '',
+                full_name: AI_BOT_NAME,
                 email: 'assistant@floggers.com',
                 avatar_url: AI_BOT_AVATAR
               }
@@ -148,7 +147,7 @@ Happy exploring! 🔥`,
           
           const { data: profile } = await supabase
             .from('profiles')
-            .select('first_name, last_name, email')
+            .select('full_name, email, avatar_url')
             .eq('id', otherUserId)
             .single()
           
@@ -182,7 +181,7 @@ Happy exploring! 🔥`,
       .from('messages')
       .select(`
         *,
-        sender:profiles(first_name, last_name)
+        sender:profiles(full_name)
       `)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
@@ -252,7 +251,7 @@ Happy exploring! 🔥`,
 
   const filteredConversations = conversations.filter(c => {
     if (!search) return true
-    const name = `${c.other_user?.first_name || ''} ${c.other_user?.last_name || ''}`.toLowerCase()
+    const name = `${c.other_user?.full_name || ''}`.toLowerCase()
     return name.includes(search.toLowerCase())
   })
 
@@ -298,13 +297,14 @@ Happy exploring! 🔥`,
                   const supabase = createClient()
                   
                   // Check if AI conversation exists
-                  const { data: existingConv } = await supabase
+                  const { data: existingConvs } = await supabase
                     .from('conversations')
-                    .select('id')
-                    .or(
-                      `and(user1_id.eq.${user.id},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${user.id})`
-                    )
-                    .maybeSingle()
+                    .select('id, user1_id, user2_id')
+                    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+                  
+                  const existingConv = existingConvs?.find(c =>
+                    c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
+                  )
                   
                   if (existingConv) {
                     setActiveId(existingConv.id)
@@ -335,8 +335,7 @@ Happy exploring! 🔥`,
                       const aiConv = {
                         ...newConv,
                         other_user: {
-                          first_name: AI_BOT_NAME,
-                          last_name: '',
+                          full_name: AI_BOT_NAME,
                           email: 'assistant@floggers.com',
                           avatar_url: AI_BOT_AVATAR
                         }
@@ -385,14 +384,14 @@ Happy exploring! 🔥`,
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0">
                       <span className="text-sm font-medium text-noir-200">
-                        {(c.other_user?.first_name?.[0] || c.other_user?.email?.[0] || '?').toUpperCase()}
+                        {(c.other_user?.full_name?.[0] || c.other_user?.email?.[0] || '?').toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-noir-200 truncate">
                       {isAI && <span className="text-rose mr-1">🤖</span>}
-                      {c.other_user?.first_name || c.other_user?.email?.split('@')[0] || 'Unknown'}
+                      {c.other_user?.full_name || c.other_user?.email?.split('@')[0] || 'Unknown'}
                     </p>
                     <p className="text-xs text-noir-500 truncate">
                       {new Date(c.updated_at).toLocaleDateString()}
@@ -417,14 +416,14 @@ Happy exploring! 🔥`,
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
                       <span className="text-sm font-medium text-noir-200">
-                        {(activeConversation.other_user?.first_name?.[0] || activeConversation.other_user?.email?.[0] || '?').toUpperCase()}
+                        {(activeConversation.other_user?.full_name?.[0] || activeConversation.other_user?.email?.[0] || '?').toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div>
                     <p className="text-sm font-medium text-noir-200 flex items-center gap-2">
                       {isAIConversation && <span className="text-rose">🤖</span>}
-                      {activeConversation.other_user?.first_name || activeConversation.other_user?.email?.split('@')[0] || 'Unknown'}
+                      {activeConversation.other_user?.full_name || activeConversation.other_user?.email?.split('@')[0] || 'Unknown'}
                     </p>
                     {isAIConversation && <p className="text-[10px] text-rose/70">AI Assistant</p>}
                   </div>
