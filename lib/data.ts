@@ -593,14 +593,22 @@ export async function getDashboardStats(makerId: string) {
     .select('*', { count: 'exact', head: true })
     .eq('maker_id', makerId);
   
-  // Get unique customers
-  const { data: customersData, error: customersError } = await supabase
-    .from('orders')
-    .select('user_id')
-    .eq('items.maker_id', makerId)
-    .not('user_id', 'is', null);
+  // Get unique customers (fix: query order_items first, then orders)
+  const { data: orderItemsData } = await supabase
+    .from('order_items')
+    .select('order_id')
+    .eq('maker_id', makerId);
   
-  const uniqueCustomers = customersData ? [...new Set(customersData.map(o => o.user_id))].length : 0;
+  const orderIds = orderItemsData?.map(i => i.order_id).filter(Boolean) || [];
+  let uniqueCustomers = 0;
+  if (orderIds.length > 0) {
+    const { data: customersData } = await supabase
+      .from('orders')
+      .select('user_id')
+      .in('id', orderIds)
+      .not('user_id', 'is', null);
+    uniqueCustomers = customersData ? [...new Set(customersData.map(o => o.user_id))].length : 0;
+  }
   
   return {
     totalSales,
@@ -613,6 +621,20 @@ export async function getDashboardStats(makerId: string) {
 export async function getMakerOrders(makerId: string, status?: string) {
   const supabase = createClient();
   
+  // Fix: get order IDs from order_items first, then fetch full orders
+  const { data: orderItemsData, error: itemsError } = await supabase
+    .from('order_items')
+    .select('order_id')
+    .eq('maker_id', makerId);
+  
+  if (itemsError) {
+    console.error('Error fetching order items:', itemsError);
+    return [];
+  }
+  
+  const orderIds = orderItemsData?.map(i => i.order_id).filter(Boolean) || [];
+  if (orderIds.length === 0) return [];
+  
   let query = supabase
     .from('orders')
     .select(`
@@ -623,7 +645,7 @@ export async function getMakerOrders(makerId: string, status?: string) {
       ),
       user:profiles(email, first_name, last_name)
     `)
-    .eq('items.maker_id', makerId)
+    .in('id', orderIds)
     .order('created_at', { ascending: false });
   
   if (status) {
