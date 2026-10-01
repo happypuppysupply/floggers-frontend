@@ -1,20 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Star, MessageSquare, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Star, MessageSquare, CheckCircle, Clock, AlertCircle, X, Send } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
 interface Review {
   id: string
+  product_id: string
   product_name: string
   product_image: string
   reviewer_name: string
+  reviewer_id: string
   rating: number
   title: string
   content: string
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
+  seller_response?: string
+  seller_response_at?: string
 }
 
 export default function ReviewsPage() {
@@ -22,6 +26,9 @@ export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved'>('all')
+  const [respondingTo, setRespondingTo] = useState<string | null>(null)
+  const [responseText, setResponseText] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -48,23 +55,29 @@ export default function ReviewsPage() {
       .from('reviews')
       .select(`
         *,
-        product:products(name, image_url),
-        user:profiles(full_name)
+        product:products(id, name, image_url),
+        user:profiles(id, full_name)
       `)
-      .eq('maker_id', maker.id)
+      .eq('product_id', 'in', 
+        supabase.from('products').select('id').eq('maker_id', maker.id)
+      )
       .order('created_at', { ascending: false })
 
     if (data) {
       setReviews(data.map((r: any) => ({
         id: r.id,
+        product_id: r.product?.id,
         product_name: r.product?.name || 'Unknown Product',
         product_image: r.product?.image_url || '/placeholder.jpg',
         reviewer_name: r.user?.full_name || 'Anonymous',
+        reviewer_id: r.user?.id,
         rating: r.rating,
         title: r.title || '',
         content: r.comment || '',
         status: r.status || 'pending',
-        created_at: r.created_at
+        created_at: r.created_at,
+        seller_response: r.seller_response,
+        seller_response_at: r.seller_response_at
       })))
     }
     
@@ -77,6 +90,33 @@ export default function ReviewsPage() {
       .update({ status: 'approved' })
       .eq('id', reviewId)
     
+    loadReviews()
+  }
+
+  const handleRejectReview = async (reviewId: string) => {
+    await supabase
+      .from('reviews')
+      .update({ status: 'rejected' })
+      .eq('id', reviewId)
+    
+    loadReviews()
+  }
+
+  const handleSubmitResponse = async (reviewId: string) => {
+    if (!responseText.trim()) return
+    
+    setSubmitting(true)
+    await supabase
+      .from('reviews')
+      .update({ 
+        seller_response: responseText.trim(),
+        seller_response_at: new Date().toISOString()
+      })
+      .eq('id', reviewId)
+    
+    setResponseText('')
+    setRespondingTo(null)
+    setSubmitting(false)
     loadReviews()
   }
 
@@ -98,7 +138,7 @@ export default function ReviewsPage() {
     <div>
       <div className="mb-8">
         <h1 className="font-serif italic text-2xl text-noir-50 mb-2">Reviews</h1>
-        <p className="text-sm text-noir-400">Manage customer reviews for your products</p>
+        <p className="text-sm text-noir-400">Manage customer reviews and respond to feedback</p>
       </div>
 
       {/* Stats */}
@@ -200,6 +240,12 @@ export default function ReviewsPage() {
                           Approved
                         </span>
                       )}
+                      {review.status === 'rejected' && (
+                        <span className="flex items-center gap-1 text-xs text-rose bg-rose/10 px-2 py-1 rounded">
+                          <X size={12} />
+                          Rejected
+                        </span>
+                      )}
                     </div>
                   </div>
                   
@@ -208,7 +254,58 @@ export default function ReviewsPage() {
                   )}
                   <p className="text-sm text-noir-300 mb-3">{review.content}</p>
                   
-                  <div className="flex items-center justify-between">
+                  {/* Seller Response */}
+                  {review.seller_response && (
+                    <div className="mt-4 bg-noir-950/50 rounded-lg p-4 border border-noir-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium text-rose">Your Response</span>
+                        <span className="text-xs text-noir-500">
+                          {review.seller_response_at && new Date(review.seller_response_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-noir-300">{review.seller_response}</p>
+                    </div>
+                  )}
+                  
+                  {/* Response Form */}
+                  {respondingTo === review.id ? (
+                    <div className="mt-4">
+                      <textarea
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        placeholder="Write your response..."
+                        rows={3}
+                        className="w-full bg-noir-950 border border-noir-800 rounded-lg px-3 py-2 text-sm text-noir-100 focus:outline-none focus:border-rose/50 mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setRespondingTo(null)
+                            setResponseText('')
+                          }}
+                          className="btn-secondary text-xs py-2 px-4"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSubmitResponse(review.id)}
+                          disabled={submitting || !responseText.trim()}
+                          className="btn-primary text-xs py-2 px-4 disabled:opacity-50"
+                        >
+                          {submitting ? 'Sending...' : <><Send size={14} className="inline mr-1" /> Send Response</>}
+                        </button>
+                      </div>
+                    </div>
+                  ) : review.status === 'approved' && !review.seller_response && (
+                    <button
+                      onClick={() => setRespondingTo(review.id)}
+                      className="mt-4 text-sm text-rose hover:text-rose-light transition-colors"
+                    >
+                      Respond to review
+                    </button>
+                  )}
+                  
+                  <div className="flex items-center justify-between mt-4">
                     <span className="text-xs text-noir-500">
                       {new Date(review.created_at).toLocaleDateString()}
                     </span>
@@ -223,9 +320,10 @@ export default function ReviewsPage() {
                           Approve
                         </button>
                         <button
+                          onClick={() => handleRejectReview(review.id)}
                           className="btn-ghost text-xs py-1.5 px-3 text-rose"
                         >
-                          <AlertCircle size={14} className="inline mr-1" />
+                          <X size={14} className="inline mr-1" />
                           Reject
                         </button>
                       </div>
