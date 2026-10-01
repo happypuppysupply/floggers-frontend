@@ -1,6 +1,7 @@
 export interface Product {
   id: string;
   name: string;
+  slug?: string;
   description?: string;
   price: number;
   image_url?: string;
@@ -11,6 +12,8 @@ export interface Product {
     name: string;
     slug?: string;
     location?: string;
+    avatar_url?: string;
+    sales_count?: number;
   };
   rating?: number;
   sales_count?: number;
@@ -33,15 +36,25 @@ export interface Product {
 
 import { createClient } from './supabase/client';
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(options?: { featured?: boolean; limit?: number }): Promise<Product[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('products')
     .select(`
       *,
       maker:makers(name, slug, location)
     `)
     .eq('is_active', true);
+
+  if (options?.featured) {
+    query = query.eq('featured', true);
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching products:', error);
@@ -161,13 +174,23 @@ export async function searchProducts(query: string): Promise<Product[]> {
   return data || [];
 }
 
-export async function getMakers() {
+export async function getMakers(options?: { featured?: boolean; limit?: number }) {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('makers')
     .select('*')
     .eq('is_verified', true)
     .order('name');
+
+  if (options?.featured) {
+    query = query.eq('featured', true);
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching makers:', error);

@@ -210,30 +210,25 @@ Happy exploring! 🔥`,
     const content = input.trim()
     setInput('')
 
-    // Optimistically show user message immediately
-    const optimisticMsg: Message = {
-      id: `temp-${Date.now()}`,
-      sender_id: user.id,
-      content: content,
-      created_at: new Date().toISOString(),
-      read: true,
-    }
-    setMessages(prev => [...prev, optimisticMsg])
-
-    // Save user message to DB (fire and forget)
-    const { error } = await supabase
+    // Save user message to DB
+    const { data: newMessage, error } = await supabase
       .from('messages')
       .insert({
         conversation_id: activeId,
         sender_id: user.id,
         content: content
       })
+      .select()
+      .single()
 
     if (error) {
       console.error('Failed to send message:', error)
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
       return
+    }
+
+    // Add the message to the UI immediately
+    if (newMessage) {
+      setMessages(prev => [...prev, newMessage as Message])
     }
 
     // If this is an AI conversation, get AI response
@@ -241,15 +236,7 @@ Happy exploring! 🔥`,
       setAiLoading(true)
       try {
         const aiResponse = await sendMessageToAI(content, activeId)
-        // Show AI response immediately (optimistic)
-        const aiMsg: Message = {
-          id: `ai-${Date.now()}`,
-          sender_id: AI_BOT_ID,
-          content: aiResponse,
-          created_at: new Date().toISOString(),
-          read: false,
-        }
-        setMessages(prev => [...prev, aiMsg])
+        // AI response is saved by the API route, realtime subscription will pick it up
       } catch (err) {
         console.error('AI response failed:', err)
         // Show error message in chat
@@ -288,10 +275,10 @@ Happy exploring! 🔥`,
   }
 
   return (
-    <div className="p-0">
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* Sidebar */}
-        <div className="w-80 border-r border-noir-800/50 flex flex-col">
+    <div className="p-0 h-[calc(100vh-4rem)]">
+      <div className="flex h-full">
+        {/* Sidebar - scrollable */}
+        <div className="w-80 border-r border-noir-800/50 flex flex-col h-full overflow-hidden">
           <div className="p-4 border-b border-noir-800/50">
             <h1 className="font-serif italic text-xl text-noir-50 mb-3">Messages</h1>
             <div className="relative">
@@ -386,7 +373,7 @@ Happy exploring! 🔥`,
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {conversations.length === 0 ? (
               <div className="p-4 text-center text-noir-400 text-sm">
                 No messages yet
@@ -426,8 +413,8 @@ Happy exploring! 🔥`,
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        {/* Chat Area - fixed, doesn't scroll with page */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           {activeConversation ? (
             <>
               {/* Header */}
@@ -455,8 +442,8 @@ Happy exploring! 🔥`,
                 </button>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Messages - scrollable area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 ? (
                   <div className="text-center text-noir-500 py-12">
                     No messages yet. Start the conversation!
@@ -488,8 +475,8 @@ Happy exploring! 🔥`,
                 <div ref={bottomRef} />
               </div>
 
-              {/* Input */}
-              <div className="p-4 border-t border-noir-800/50">
+              {/* Input - fixed at bottom */}
+              <div className="p-4 border-t border-noir-800/50 flex-shrink-0">
                 <div className="flex items-end gap-2">
                   <div className="flex-1 bg-noir-900 border border-noir-700 rounded-2xl px-4 py-2.5">
                     <textarea

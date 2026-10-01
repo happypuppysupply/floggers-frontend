@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Check, Loader2, Upload, X, Camera, Image as ImageIcon } from 'lucide-react'
+import { Save, Check, Loader2, Upload, X, Camera, Image as ImageIcon, Copy, Link as LinkIcon, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
@@ -28,6 +28,8 @@ export default function SettingsPage() {
   const [coverUrl, setCoverUrl] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [makerSlug, setMakerSlug] = useState('')
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     loadMakerProfile()
@@ -56,6 +58,7 @@ export default function SettingsPage() {
       })
       setAvatarUrl(maker.avatar_url || maker.image_url || '')
       setCoverUrl(maker.cover_image_url || '')
+      setMakerSlug(maker.slug || '')
     } else {
       // No maker yet - try to load from application
       const { data: application } = await supabase
@@ -174,6 +177,15 @@ export default function SettingsPage() {
     if (!saveError) {
       setSaved(true)
       setShowModal(true)
+      // Refresh maker data to get updated slug
+      const { data: updatedMaker } = await supabase
+        .from('makers')
+        .select('slug')
+        .eq('profile_id', user.id)
+        .single()
+      if (updatedMaker?.slug) {
+        setMakerSlug(updatedMaker.slug)
+      }
       setTimeout(() => {
         setSaved(false)
       }, 2000)
@@ -195,12 +207,46 @@ export default function SettingsPage() {
     )
   }
 
+  const copyProfileLink = () => {
+    if (makerSlug) {
+      const link = `${window.location.origin}/maker/${makerSlug}`
+      navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <div className="p-8">
       <div className="mb-6">
         <h1 className="font-serif italic text-2xl text-noir-50 mb-1">Shop Settings</h1>
         <p className="text-sm text-noir-400">Manage your shop profile and branding</p>
       </div>
+
+      {/* Share Profile Link */}
+      {makerSlug && (
+        <div className="mb-6 p-4 bg-noir-900/50 border border-noir-800 rounded-xl">
+          <div className="flex items-center gap-3 mb-2">
+            <LinkIcon size={18} className="text-rose" />
+            <h3 className="text-sm font-medium text-noir-200">Share Your Profile</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-noir-950 border border-noir-800 rounded-lg px-3 py-2 text-sm text-noir-400 truncate">
+              {typeof window !== 'undefined' ? `${window.location.origin}/maker/${makerSlug}` : `/maker/${makerSlug}`}
+            </div>
+            <button
+              onClick={copyProfileLink}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                copied 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                  : 'bg-rose-dark hover:bg-rose text-noir-50'
+              }`}
+            >
+              {copied ? <><CheckCircle size={16} /> Copied!</> : <><Copy size={16} /> Copy</>}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (

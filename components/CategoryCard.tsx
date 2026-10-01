@@ -11,7 +11,7 @@ interface CategoryCardProps {
 export default function CategoryCard({ category, large = false }: CategoryCardProps) {
   return (
     <Link 
-      href={`/category/${category.id}`}
+      href={`/category/${category.slug || category.id}`}
       className={`group relative overflow-hidden rounded-xl ${
         large ? 'aspect-[4/3]' : 'aspect-square'
       }`}

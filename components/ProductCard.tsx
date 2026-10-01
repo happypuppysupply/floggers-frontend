@@ -15,7 +15,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
   if (compact) {
     return (
       <Link 
-        href={`/product/${product.id}`} 
+        href={`/product/${product.slug || product.id}`} 
         className="group"
       >
         <div className="relative overflow-hidden rounded-xl mb-3">
@@ -41,7 +41,7 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
 
   return (
     <Link 
-      href={`/product/${product.id}`} 
+      href={`/product/${product.slug || product.id}`} 
       className="group card-glass rounded-2xl overflow-hidden block"
     >
       <div className="relative overflow-hidden">

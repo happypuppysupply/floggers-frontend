@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getProductsByMaker, getRelatedProducts, getFeaturedProducts } from '@/lib/data'
+import { getProductsByMaker, getRelatedProducts, getFeaturedProducts, getMakerById } from '@/lib/data'
 import ProductCard from './ProductCard'
 
 interface Product {
@@ -20,17 +20,20 @@ interface RelatedProductsProps {
   makerId: string;
   makerName: string;
   categoryId?: string;
+  makerSlug?: string;
 }
 
 export default function RelatedProducts({ 
   productId, 
   makerId, 
   makerName,
-  categoryId 
+  categoryId,
+  makerSlug
 }: RelatedProductsProps) {
   const [makerProducts, setMakerProducts] = useState<Product[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [makerLinkSlug, setMakerLinkSlug] = useState<string>(makerSlug || makerId);
 
   useEffect(() => {
     loadProducts();
@@ -43,9 +46,21 @@ export default function RelatedProducts({
     const makerProds = await getProductsByMaker(makerId, productId, 4);
     setMakerProducts(makerProds);
     
-    // Get "You may also like"
-    const relProds = await getRelatedProducts(productId, makerId, categoryId);
-    setRelatedProducts(relProds.filter(p => p.id !== productId));
+    // Get "You may also like" - only if productId is a valid UUID
+    // Validate UUID format before calling RPC
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(productId)) {
+      const relProds = await getRelatedProducts(productId, makerId, categoryId);
+      setRelatedProducts(relProds.filter(p => p.id !== productId));
+    }
+    
+    // Fetch maker slug if not provided
+    if (!makerSlug) {
+      const maker = await getMakerById(makerId);
+      if (maker?.slug) {
+        setMakerLinkSlug(maker.slug);
+      }
+    }
     
     setLoading(false);
   };
@@ -62,7 +77,7 @@ export default function RelatedProducts({
               More from {makerName}
             </h2>
             <Link 
-              href={`/maker/${makerId}`}
+              href={`/maker/${makerLinkSlug}`}
               className="text-sm text-rose hover:text-rose-light"
             >
               View shop

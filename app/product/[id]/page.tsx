@@ -218,6 +218,7 @@ export default async function ProductPage({ params }: PageProps) {
         makerId={product.maker_id}
         makerName={product.maker?.name || 'Unknown'}
         categoryId={product.category_id}
+        makerSlug={product.maker?.slug}
       />
     </div>
   );
