@@ -46,10 +46,14 @@ export default function RelatedProducts({
     const makerProds = await getProductsByMaker(makerId, productId, 4);
     setMakerProducts(makerProds);
     
-    // Get "You may also like" - only if productId is a valid UUID
+    // Get "You may also like" - only if IDs are valid UUIDs
     // Validate UUID format before calling RPC
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (uuidRegex.test(productId)) {
+    const isValidProductId = uuidRegex.test(productId);
+    const isValidMakerId = uuidRegex.test(makerId);
+    const isValidCategoryId = categoryId ? uuidRegex.test(categoryId) : false;
+    
+    if (isValidProductId && (isValidMakerId || isValidCategoryId)) {
       const relProds = await getRelatedProducts(productId, makerId, categoryId);
       setRelatedProducts(relProds.filter(p => p.id !== productId));
     }

@@ -99,11 +99,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed position, doesn't scroll over header */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50
+        fixed lg:sticky lg:top-0 left-0 z-40 lg:z-auto
         w-64 bg-noir-900 border-r border-noir-800/50 
-        flex flex-col h-full
+        flex flex-col h-screen
         transform transition-transform duration-300 ease-in-out
         lg:transform-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -185,8 +185,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-0 min-w-0">
-        {/* Mobile Header */}
+      <main className="flex-1 min-w-0">
+        {/* Mobile Header - Fixed, doesn't scroll with content */}
         <div className="lg:hidden sticky top-0 z-30 bg-noir-900/95 backdrop-blur border-b border-noir-800/50 px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-lg font-serif italic text-noir-50">Floggers</span>
@@ -214,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   You can still add and manage products, but they won't be visible to buyers until approved.
                 </p>
                 <Link 
-                  href="/dashboard/settings" 
+                  href="/dashboard/application-status" 
                   className="inline-block mt-2 text-xs text-amber-400 hover:text-amber-300 underline"
                 >
                   View application status

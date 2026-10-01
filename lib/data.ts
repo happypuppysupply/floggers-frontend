@@ -736,3 +736,23 @@ export async function getOrCreateConversation(user1Id: string, user2Id: string) 
   
   return newConv;
 }
+
+// Get maker reviews
+export async function getMakerReviews(makerId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('maker_reviews')
+    .select(`
+      *,
+      reviewer:profiles(full_name, avatar_url)
+    `)
+    .eq('maker_id', makerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching maker reviews:', error);
+    return [];
+  }
+
+  return data || [];
+}
