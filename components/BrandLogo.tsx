@@ -18,7 +18,7 @@ export default function BrandLogo({ size = 32, showText = true, className = '', 
           alt="Floggers" 
           width={size} 
           height={size}
-          className={`rounded-full ${animated ? '' : ''}`}
+          className="rounded-full"
           style={{ 
             filter: 'drop-shadow(0 0 12px rgba(155, 77, 202, 0.6))',
           }}

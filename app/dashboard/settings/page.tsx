@@ -135,18 +135,20 @@ export default function SettingsPage() {
     
     let saveError;
     
-    const makerData = {
+    // Only include fields that exist in the makers table
+    const makerData: any = {
       name: form.name,
       tagline: form.tagline,
-      email: form.email,
       location: form.location,
       website: form.website,
       bio: form.bio,
-      instagram: form.instagram,
-      avatar_url: avatarUrl,
-      cover_image_url: coverUrl,
       updated_at: new Date().toISOString(),
     }
+    
+    // Only add optional columns if they exist (migration may not be run yet)
+    if (avatarUrl) makerData.avatar_url = avatarUrl
+    if (coverUrl) makerData.cover_image_url = coverUrl
+    if (form.instagram) makerData.instagram = form.instagram
     
     if (existingMaker) {
       // Update existing maker
@@ -166,7 +168,6 @@ export default function SettingsPage() {
           slug: slug || `maker-${Date.now()}`,
           ...makerData,
           is_verified: false,
-          is_active: true,
           rating: 0,
           products_count: 0,
         })

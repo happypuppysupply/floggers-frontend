@@ -79,16 +79,18 @@ export default async function Home() {
         </div>
 
         {/* Hero image grid */}
+        {/* Hero Product Showcase */}
         <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-[80%]">
-          <div className="relative h-full w-full max-w-2xl mx-auto">
-            <div className="absolute top-0 right-12 w-64 h-80 rounded-2xl overflow-hidden border border-noir-700/50 rotate-3 shadow-2xl">
-              <div className="w-full h-full bg-gradient-to-br from-violet-dark to-noir-900" />
-            </div>
-            <div className="absolute top-20 right-48 w-56 h-72 rounded-2xl overflow-hidden border border-noir-700/50 -rotate-6 shadow-2xl">
-              <div className="w-full h-full bg-gradient-to-br from-magenta-dark to-noir-900" />
-            </div>
-            <div className="absolute bottom-12 right-24 w-60 h-60 rounded-2xl overflow-hidden border border-noir-700/50 rotate-6 shadow-2xl">
-              <div className="w-full h-full bg-gradient-to-br from-violet to-noir-900" />
+          <div className="relative h-full w-full max-w-2xl mx-auto flex items-center justify-center">
+            <div className="relative w-96 h-96">
+              {/* Main product image */}
+              <img 
+                src="/logo.png" 
+                alt="Floggers" 
+                className="w-full h-full object-contain drop-shadow-[0_0_60px_rgba(155,77,202,0.5)]"
+              />
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-violet/20 rounded-full blur-[80px] -z-10" />
             </div>
           </div>
         </div>

@@ -96,8 +96,8 @@ export default function AddProductPage() {
             slug: slug || `maker-${Date.now()}`,
             location: application.location || '',
             bio: application.description || '',
+            tagline: application.category || '',
             is_verified: false,
-            is_active: true,
             rating: 0,
             products_count: 0,
           })
