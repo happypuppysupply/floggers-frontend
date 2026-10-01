@@ -152,7 +152,7 @@ export default function AddProductPage() {
         materials: materials,
         image_url: images[0] || null,
         images: images.slice(0, 5),
-        is_active: maker.is_verified,
+        is_active: isVerified,
         // Shipping fields
         shipping_cost: form.shipping_cost ? parseFloat(form.shipping_cost) : 0,
         shipping_time_min: form.shipping_time_min ? parseInt(form.shipping_time_min) : null,
@@ -169,12 +169,19 @@ export default function AddProductPage() {
       return
     }
 
-    // Update category product count
-    await supabase.rpc('update_category_counts')
+    // Update category product count (best effort — don't block on missing RPC)
+    try {
+      await supabase.rpc('update_category_counts')
+    } catch {
+      // Ignore if RPC doesn't exist yet
+    }
 
     setNewProductId(product.id)
     setSubmitted(true)
     setSubmitting(false)
+    
+    // Redirect to products listing page
+    router.push('/dashboard/products')
   }
 
   const addMaterial = () => setForm({ ...form, materials: [...form.materials, ''] })
