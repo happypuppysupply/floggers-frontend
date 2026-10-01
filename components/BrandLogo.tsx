@@ -13,18 +13,23 @@ export default function BrandLogo({ size = 32, showText = true, className = '', 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <div className={`relative ${animated ? 'avatar-loader' : ''}`}>
+        {/* Lighter background behind icon for visibility on dark header */}
+        <div 
+          className="absolute inset-0 rounded-full bg-gradient-to-br from-violet/20 to-violet/5"
+          style={{ transform: 'scale(1.3)' }}
+        />
         <img 
           src={AI_BOT_AVATAR} 
           alt="Floggers" 
           width={size} 
           height={size}
-          className="rounded-full"
+          className="rounded-full relative z-10"
           style={{ 
             filter: 'drop-shadow(0 0 12px rgba(155, 77, 202, 0.6))',
           }}
         />
         {animated && (
-          <div className="absolute inset-0 rounded-full border-2 border-violet/30 animate-ping" style={{ animationDuration: '2s' }} />
+          <div className="absolute inset-0 rounded-full border-2 border-violet/30 animate-ping z-20" style={{ animationDuration: '2s' }} />
         )}
       </div>
       {showText && (

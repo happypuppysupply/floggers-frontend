@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, X, Upload, CheckCircle, Loader2, Truck, DollarSign, Clock, MapPin } from 'lucide-react'
+import LocationAutocomplete from '@/components/LocationAutocomplete'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
@@ -105,7 +106,8 @@ export default function AddProductPage() {
           .single()
         
         if (createError || !newMaker) {
-          setError('Error creating your shop. Please try again or contact support.')
+          console.error('Maker creation error:', createError)
+          setError(`Error creating your shop: ${createError?.message || 'Unknown error'}. Please ensure migration 007 has been run in Supabase.`)
           setSubmitting(false)
           return
         }
@@ -447,16 +449,13 @@ export default function AddProductPage() {
                 
                 <div>
                   <label className="block text-sm text-noir-300 mb-1">Ships From</label>
-                  <div className="relative">
-                    <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-noir-500" />
-                    <input
-                      type="text"
-                      value={form.ships_from}
-                      onChange={e => setForm({ ...form, ships_from: e.target.value })}
-                      className="w-full bg-noir-950 border border-noir-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-noir-100 focus:outline-none focus:border-rose/50"
-                      placeholder="Portland, OR"
-                    />
-                  </div>
+                  <LocationAutocomplete
+                    value={form.ships_from}
+                    onChange={(value, city, state) => setForm({ ...form, ships_from: value })}
+                    placeholder="Portland, OR"
+                    savedLocations={['Portland, OR', 'Los Angeles, CA', 'New York, NY']}
+                  />
+                  <p className="text-xs text-noir-500 mt-1">Start typing to see suggestions or select from your saved locations</p>
                 </div>
                 
                 <div className="flex gap-3 mt-4">

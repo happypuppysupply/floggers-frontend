@@ -51,10 +51,10 @@ export default function SettingsPage() {
         name: maker.name || '',
         tagline: maker.tagline || '',
         location: maker.location || '',
-        website: maker.website || '',
+        website: maker.website || maker.website_url || '',
         bio: maker.bio || '',
       })
-      setAvatarUrl(maker.avatar_url || '')
+      setAvatarUrl(maker.avatar_url || maker.image_url || '')
       setCoverUrl(maker.cover_image_url || '')
     } else {
       // No maker yet - try to load from application
@@ -69,7 +69,7 @@ export default function SettingsPage() {
           name: application.shop_name || '',
           tagline: application.category || '',
           location: application.location || '',
-          website: application.website || '',
+          website: application.website || application.website_url || '',
           bio: application.description || '',
         })
       }
@@ -131,19 +131,19 @@ export default function SettingsPage() {
     
     let saveError;
     
-    // ONLY use columns that exist in the base makers schema
-    // If migration 007 hasn't been run, these extra columns will fail
+    // Build maker data with only core columns that always exist
+    // Migration 007 adds website, avatar_url, cover_image_url - handle gracefully
     const makerData: any = {
       name: form.name,
       tagline: form.tagline,
       location: form.location,
-      website: form.website,
       bio: form.bio,
       updated_at: new Date().toISOString(),
     }
     
-    // Only add image columns if they have values (migration 007 adds these)
-    // This way if migration hasn't run, we don't error on empty values
+    // Only add optional columns if they have values
+    // This prevents errors if migration 007 hasn't been run yet
+    if (form.website) makerData.website = form.website
     if (avatarUrl) makerData.avatar_url = avatarUrl
     if (coverUrl) makerData.cover_image_url = coverUrl
     

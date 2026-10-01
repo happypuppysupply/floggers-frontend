@@ -173,9 +173,11 @@ Happy exploring! 🔥`,
     if (!activeId || !user) return
     
     loadMessages(activeId)
-  }, [activeId])
+  }, [activeId, user])
 
   const loadMessages = async (conversationId: string) => {
+    if (!conversationId) return
+    
     const { data, error } = await supabase
       .from('messages')
       .select(`
@@ -185,8 +187,14 @@ Happy exploring! 🔥`,
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
 
+    if (error) {
+      console.error('Error loading messages:', error)
+    }
+
     if (data) {
       setMessages(data)
+    } else {
+      setMessages([])
     }
   }
 
