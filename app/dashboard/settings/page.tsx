@@ -29,21 +29,43 @@ export default function SettingsPage() {
     setLoading(true)
     const supabase = createClient()
     
+    // Try to get maker record first
     const { data: maker } = await supabase
       .from('makers')
       .select('*')
       .eq('profile_id', user.id)
-      .single()
+      .maybeSingle()
     
     if (maker) {
       setForm({
         name: maker.name || '',
         tagline: maker.tagline || '',
-        email: maker.email || '',
+        email: maker.email || user.email || '',
         location: maker.location || '',
         website: maker.website || '',
         bio: maker.bio || '',
       })
+    } else {
+      // No maker yet - try to load from application
+      const { data: application } = await supabase
+        .from('maker_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (application) {
+        setForm({
+          name: application.shop_name || '',
+          tagline: application.category || '',
+          email: application.applicant_email || user.email || '',
+          location: application.location || '',
+          website: application.website || '',
+          bio: application.description || '',
+        })
+      } else {
+        // Pre-fill email from user
+        setForm(prev => ({ ...prev, email: user.email || '' }))
+      }
     }
     
     setLoading(false)
@@ -55,21 +77,58 @@ export default function SettingsPage() {
     setSaving(true)
     const supabase = createClient()
     
-    const { error } = await supabase
+    // Check if maker exists first
+    const { data: existingMaker } = await supabase
       .from('makers')
-      .update({
-        name: form.name,
-        tagline: form.tagline,
-        email: form.email,
-        location: form.location,
-        website: form.website,
-        bio: form.bio,
-      })
+      .select('id')
       .eq('profile_id', user.id)
+      .maybeSingle()
+    
+    let error;
+    
+    if (existingMaker) {
+      // Update existing maker
+      const { error: updateError } = await supabase
+        .from('makers')
+        .update({
+          name: form.name,
+          tagline: form.tagline,
+          email: form.email,
+          location: form.location,
+          website: form.website,
+          bio: form.bio,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('profile_id', user.id)
+      error = updateError
+    } else {
+      // Create new maker record
+      const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
+      const { error: insertError } = await supabase
+        .from('makers')
+        .insert({
+          profile_id: user.id,
+          name: form.name,
+          slug: slug || `maker-${Date.now()}`,
+          tagline: form.tagline,
+          email: form.email,
+          location: form.location,
+          website: form.website,
+          bio: form.bio,
+          is_verified: false,
+          is_active: true,
+          rating: 0,
+          products_count: 0,
+        })
+      error = insertError
+    }
     
     if (!error) {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } else {
+      console.error('Save error:', error)
+      alert('Failed to save changes. Please try again.')
     }
     
     setSaving(false)

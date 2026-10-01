@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, User, Search, MoreVertical, Loader2, MessageSquare } from 'lucide-react'
+import { Send, User, Search, MoreVertical, Loader2, MessageSquare, Bot } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
@@ -229,6 +229,64 @@ export default function MessagesPage() {
                 className="w-full bg-noir-900 border border-noir-800 rounded-lg pl-9 pr-3 py-2 text-sm text-noir-100 placeholder:text-noir-500 focus:outline-none focus:border-rose/50"
               />
             </div>
+          </div>
+
+          {/* AI Assistant Button */}
+          <div className="p-3 border-b border-noir-800/30">
+            <button
+              onClick={async () => {
+                if (!user) return
+                const supabase = createClient()
+                
+                // Check if AI conversation exists
+                const { data: existingConv } = await supabase
+                  .from('conversations')
+                  .select('id')
+                  .or(
+                    `and(user1_id.eq.${user.id},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${user.id})`
+                  )
+                  .maybeSingle()
+                
+                if (existingConv) {
+                  setActiveId(existingConv.id)
+                } else {
+                  // Create new AI conversation
+                  const { data: newConv } = await supabase
+                    .from('conversations')
+                    .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
+                    .select()
+                    .single()
+                  
+                  if (newConv) {
+                    // Send welcome message
+                    await supabase.from('messages').insert({
+                      conversation_id: newConv.id,
+                      sender_id: AI_BOT_ID,
+                      content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.\n\n**I can help you with:**\n• How to browse and buy products\n• How to become a seller\n• Product recommendations\n• Community guidelines\n• Troubleshooting\n\nJust send me a message anytime! I'm always here to help.\n\nHappy exploring! 🔥`,
+                      read: false
+                    })
+                    
+                    // Reload conversations
+                    await loadConversations()
+                    setActiveId(newConv.id)
+                  }
+                }
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-noir-800/30 border border-noir-700/50 hover:bg-noir-800/50 hover:border-rose/30 transition-colors text-left group"
+            >
+              <img 
+                src={AI_BOT_AVATAR} 
+                alt="" 
+                className="w-10 h-10 rounded-full object-cover shrink-0 border border-noir-700 group-hover:border-rose/50"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-noir-200 flex items-center gap-2">
+                  <span className="text-rose">🤖</span>
+                  {AI_BOT_NAME}
+                </p>
+                <p className="text-xs text-rose/70">Click to start chatting</p>
+              </div>
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto">

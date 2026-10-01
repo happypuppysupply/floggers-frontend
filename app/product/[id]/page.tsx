@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { getProductById, getMakerFollowerCount } from '@/lib/data';
+import { getProductById, getProductBySlug, getMakerFollowerCount } from '@/lib/data';
 import AddToCartClient from '@/components/AddToCartClient';
 import ProductReviews from '@/components/ProductReviews';
 import ShippingInfo from '@/components/ShippingInfo';
@@ -17,7 +17,9 @@ function isUUID(str: string) {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = isUUID(params.id) ? await getProductById(params.id) : null;
+  const product = isUUID(params.id) 
+    ? await getProductById(params.id) 
+    : await getProductBySlug(params.id);
   if (!product) {
     return { title: 'Product Not Found' };
   }
@@ -28,7 +30,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const product = await getProductById(params.id);
+  // Support both UUIDs and slugs
+  const product = isUUID(params.id) 
+    ? await getProductById(params.id) 
+    : await getProductBySlug(params.id);
 
   if (!product) {
     notFound();
