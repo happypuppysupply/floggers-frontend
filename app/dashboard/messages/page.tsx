@@ -41,11 +41,57 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // Load conversations
+  // Load conversations and auto-create AI conversation if needed
   useEffect(() => {
     if (!user) return
     
-    loadConversations()
+    const init = async () => {
+      await loadConversations()
+      
+      // Check if AI conversation exists, if not create it
+      const supabase = createClient()
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(
+          `and(user1_id.eq.${user.id},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${user.id})`
+        )
+        .maybeSingle()
+      
+      if (!existingConv) {
+        // Create AI conversation with welcome message
+        const { data: newConv } = await supabase
+          .from('conversations')
+          .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
+          .select()
+          .single()
+        
+        if (newConv) {
+          await supabase.from('messages').insert({
+            conversation_id: newConv.id,
+            sender_id: AI_BOT_ID,
+            content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.
+
+**I can help you with:**
+• How to browse and buy products
+• How to become a seller
+• Product recommendations
+• Community guidelines
+• Troubleshooting
+
+Just send me a message anytime! I'm always here to help.
+
+Happy exploring! 🔥`,
+            read: false
+          })
+          
+          // Reload conversations to show the new AI chat
+          await loadConversations()
+        }
+      }
+    }
+    
+    init()
   }, [user])
 
   // Subscribe to messages

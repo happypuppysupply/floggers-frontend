@@ -68,15 +68,65 @@ export default function AddProductPage() {
       .from('makers')
       .select('id, is_verified')
       .eq('profile_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (makerError || !maker) {
-      setError('You must be a registered seller to add products. Apply at /maker/signup')
+    if (makerError) {
+      console.error('Maker lookup error:', makerError)
+      setError('Error looking up your seller account. Please try again.')
       setSubmitting(false)
       return
     }
 
-    setMakerVerified(maker.is_verified)
+    if (!maker) {
+      // Check if they have a pending application
+      const { data: application } = await supabase
+        .from('maker_applications')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (application) {
+        // Create maker record from application so they can add products
+        const slug = user.email?.split('@')[0] || `maker-${Date.now()}`
+        const { data: newMaker, error: createError } = await supabase
+          .from('makers')
+          .insert({
+            profile_id: user.id,
+            name: 'Your Shop', // Will be updated in settings
+            slug: slug,
+            is_verified: false,
+            is_active: true,
+            rating: 0,
+            products_count: 0,
+          })
+          .select()
+          .single()
+        
+        if (createError || !newMaker) {
+          setError('You must complete your shop setup in Settings before adding products.')
+          setSubmitting(false)
+          return
+        }
+        
+        // Use the newly created maker
+        setMakerVerified(false)
+        
+        // Continue with product creation using newMaker
+        await createProduct(newMaker.id, newMaker.is_verified)
+        return
+      } else {
+        setError('You must apply to be a seller before adding products. Apply at /maker/signup')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    await createProduct(maker.id, maker.is_verified)
+  }
+
+  const createProduct = async (makerId: string, isVerified: boolean) => {
+    const supabase = createClient()
+    setMakerVerified(isVerified)
 
     // Create slug
     const slug = generateSlug(form.name)
@@ -88,7 +138,7 @@ export default function AddProductPage() {
     const { data: product, error: insertError } = await supabase
       .from('products')
       .insert({
-        maker_id: maker.id,
+        maker_id: makerId,
         category_id: form.category,
         name: form.name,
         slug: slug,

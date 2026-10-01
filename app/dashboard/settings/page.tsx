@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Check, Loader2 } from 'lucide-react'
+import { Save, Check, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({
     name: '',
     tagline: '',
@@ -75,6 +77,7 @@ export default function SettingsPage() {
     if (!user) return
     
     setSaving(true)
+    setError('')
     const supabase = createClient()
     
     // Check if maker exists first
@@ -84,7 +87,7 @@ export default function SettingsPage() {
       .eq('profile_id', user.id)
       .maybeSingle()
     
-    let error;
+    let saveError;
     
     if (existingMaker) {
       // Update existing maker
@@ -100,7 +103,7 @@ export default function SettingsPage() {
           updated_at: new Date().toISOString(),
         })
         .eq('profile_id', user.id)
-      error = updateError
+      saveError = updateError
     } else {
       // Create new maker record
       const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
@@ -120,15 +123,19 @@ export default function SettingsPage() {
           rating: 0,
           products_count: 0,
         })
-      error = insertError
+      saveError = insertError
     }
     
-    if (!error) {
+    if (!saveError) {
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setShowModal(true)
+      setTimeout(() => {
+        setSaved(false)
+        setShowModal(false)
+      }, 2000)
     } else {
-      console.error('Save error:', error)
-      alert('Failed to save changes. Please try again.')
+      console.error('Save error:', saveError)
+      setError(saveError.message || 'Failed to save changes. Please try again.')
     }
     
     setSaving(false)
@@ -150,6 +157,32 @@ export default function SettingsPage() {
         <h1 className="font-serif italic text-2xl text-noir-50 mb-1">Shop Settings</h1>
         <p className="text-sm text-noir-400">Manage your shop profile</p>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-rose/20 border border-rose/30 rounded-lg text-rose-light text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowModal(false)}>
+          <div className="bg-noir-900 border border-noir-700 rounded-2xl p-6 max-w-sm mx-4 text-center">
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} className="text-emerald-400" />
+            </div>
+            <h3 className="text-lg font-medium text-noir-100 mb-2">Changes Saved!</h3>
+            <p className="text-sm text-noir-400 mb-4">Your shop profile has been updated successfully.</p>
+            <button 
+              onClick={() => setShowModal(false)}
+              className="btn-primary w-full"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card-glass p-6 max-w-2xl">
         <div className="space-y-4">

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ArrowRight, Loader2, Clock, Shield } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
@@ -33,6 +33,28 @@ export default function MakerSignupPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [existingStatus, setExistingStatus] = useState<'pending' | 'approved' | null>(null)
+
+  // Check for existing application on load
+  useEffect(() => {
+    const checkExisting = async () => {
+      if (!user) return
+      
+      const supabase = createClient()
+      const { data: existingApp } = await supabase
+        .from('maker_applications')
+        .select('status')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'approved'])
+        .maybeSingle()
+      
+      if (existingApp) {
+        setExistingStatus(existingApp.status as 'pending' | 'approved')
+      }
+    }
+    
+    checkExisting()
+  }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -148,6 +170,57 @@ export default function MakerSignupPage() {
             <Link href="/" className="btn-primary">
               Back to Marketplace
             </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show status if already applied
+  if (existingStatus === 'pending') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="card-glass p-8">
+            <Clock size={64} className="text-amber-400 mx-auto mb-6" />
+            <h1 className="font-serif italic text-2xl text-noir-50 mb-4">Application Pending</h1>
+            <p className="text-noir-300 mb-2">Your application to sell on Floggers is under review.</p>
+            <p className="text-sm text-noir-400 mb-6">
+              We&apos;ll email you within 2-3 business days with our decision.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Link href="/dashboard" className="btn-primary">
+                Go to Dashboard
+              </Link>
+              <Link href="/" className="btn-secondary">
+                Back to Marketplace
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (existingStatus === 'approved') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="card-glass p-8">
+            <Shield size={64} className="text-emerald-400 mx-auto mb-6" />
+            <h1 className="font-serif italic text-2xl text-noir-50 mb-4">You&apos;re Approved!</h1>
+            <p className="text-noir-300 mb-2">Your seller application has been approved.</p>
+            <p className="text-sm text-noir-400 mb-6">
+              You can now add products and start selling on Floggers.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Link href="/dashboard/products/new" className="btn-primary">
+                Add Your First Product
+              </Link>
+              <Link href="/dashboard" className="btn-secondary">
+                Go to Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </div>
