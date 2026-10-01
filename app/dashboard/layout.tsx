@@ -19,7 +19,8 @@ import {
   Wallet,
   Menu,
   X,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react'
 
 const navItems = [
