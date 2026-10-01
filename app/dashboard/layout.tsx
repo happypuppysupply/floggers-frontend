@@ -200,6 +200,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
+        {/* Pending Approval Banner */}
+        {makerInfo && !makerInfo.isVerified && (
+          <div className="mx-4 lg:mx-8 mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                <span className="text-amber-400 text-lg">⏳</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-300">Your shop is pending approval</p>
+                <p className="text-xs text-noir-400 mt-1">
+                  Our team is reviewing your application. You'll be notified once approved. 
+                  You can still add and manage products, but they won't be visible to buyers until approved.
+                </p>
+                <Link 
+                  href="/dashboard/settings" 
+                  className="inline-block mt-2 text-xs text-amber-400 hover:text-amber-300 underline"
+                >
+                  View application status
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Page Content */}
         <div className="p-4 lg:p-8">
           {children}

@@ -2,6 +2,7 @@
 // POST /api/ai-chat - Send message to AI and get response
 
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -97,9 +98,14 @@ export async function POST(request: NextRequest) {
     const aiResponse = data.choices?.[0]?.message?.content || 
       "I'm having trouble connecting right now. Please try again in a moment."
 
-    // Store the AI response in Supabase (fire and forget)
+    // Store the AI response in Supabase using service role key (bypasses RLS)
     if (conversationId) {
-      supabase.from('messages').insert({
+      const serviceSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+      serviceSupabase.from('messages').insert({
         conversation_id: conversationId,
         sender_id: AI_BOT_ID,
         content: aiResponse,

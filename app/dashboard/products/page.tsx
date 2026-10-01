@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, X, Loader2, Eye, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, X, Loader2, Eye, Pencil, Trash2, Circle } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 
@@ -258,12 +258,19 @@ export default function ProductsPage() {
                       >
                         <Eye size={16} />
                       </Link>
+                      <Link 
+                        href={`/dashboard/products/edit/${product.id}`}
+                        className="p-1.5 rounded hover:bg-noir-700 text-noir-400 hover:text-noir-200"
+                        title="Edit"
+                      >
+                        <Pencil size={16} />
+                      </Link>
                       <button 
                         onClick={() => handleToggleStatus(product)} 
                         className="p-1.5 rounded hover:bg-noir-700 text-noir-400 hover:text-noir-200"
                         title={product.is_active ? 'Deactivate' : 'Activate'}
                       >
-                        <Pencil size={16} />
+                        <Circle size={16} className={product.is_active ? 'text-emerald-400' : 'text-noir-500'} />
                       </button>
                       <button 
                         onClick={() => setDeleteProduct(product)} 

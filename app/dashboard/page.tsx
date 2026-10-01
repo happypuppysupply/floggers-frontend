@@ -38,7 +38,7 @@ export default function DashboardOverview() {
     progress_percent: 0
   })
   const [loading, setLoading] = useState(true)
-  const [makerInfo, setMakerInfo] = useState<{ id: string; name: string; location?: string } | null>(null)
+  const [makerInfo, setMakerInfo] = useState<{ id: string; name: string; location?: string; is_verified: boolean; is_live: boolean } | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,12 +49,12 @@ export default function DashboardOverview() {
       // Get maker profile
       const { data: maker } = await supabase
         .from('makers')
-        .select('id, name, location')
+        .select('id, name, location, is_verified, is_live')
         .eq('profile_id', user.id)
         .maybeSingle()
 
       if (maker) {
-        setMakerInfo(maker)
+        setMakerInfo({ ...maker, is_live: maker.is_live ?? false })
         const stats = await getDashboardStats(maker.id)
         setStats(stats)
         
@@ -148,11 +148,46 @@ export default function DashboardOverview() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="font-serif italic text-2xl text-noir-50 mb-2">Dashboard Overview</h1>
-        <p className="text-sm text-noir-400">
-          {makerInfo?.name ? `Welcome back, ${makerInfo.name}` : 'Welcome to your shop dashboard'}
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif italic text-2xl text-noir-50 mb-2">Dashboard Overview</h1>
+          <p className="text-sm text-noir-400">
+            {makerInfo?.name ? `Welcome back, ${makerInfo.name}` : 'Welcome to your shop dashboard'}
+          </p>
+        </div>
+        
+        {/* Live / Sandbox Toggle */}
+        {makerInfo && (
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={`text-xs font-medium ${!makerInfo.is_live ? 'text-emerald-400' : 'text-noir-500'}`}>
+              Sandbox
+            </span>
+            <button
+              onClick={async () => {
+                if (!makerInfo.is_verified) return
+                const supabase = createClient()
+                const newState = !makerInfo.is_live
+                await supabase.from('makers').update({ is_live: newState }).eq('id', makerInfo.id)
+                setMakerInfo({ ...makerInfo, is_live: newState })
+              }}
+              disabled={!makerInfo.is_verified}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                makerInfo.is_live ? 'bg-emerald-500' : 'bg-noir-700'
+              } ${!makerInfo.is_verified ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              title={!makerInfo.is_verified ? 'Go live unavailable until approved' : 'Toggle live/sandbox mode'}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-noir-50 transition-transform ${
+                makerInfo.is_live ? 'translate-x-6' : 'translate-x-0'
+              }`} />
+            </button>
+            <span className={`text-xs font-medium ${makerInfo.is_live ? 'text-emerald-400' : 'text-noir-500'}`}>
+              Live
+            </span>
+            {!makerInfo.is_verified && (
+              <span className="text-[10px] text-amber-400">(locked until approved)</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats */}

@@ -210,7 +210,17 @@ Happy exploring! 🔥`,
     const content = input.trim()
     setInput('')
 
-    // Save user message
+    // Optimistically show user message immediately
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      sender_id: user.id,
+      content: content,
+      created_at: new Date().toISOString(),
+      read: true,
+    }
+    setMessages(prev => [...prev, optimisticMsg])
+
+    // Save user message to DB (fire and forget)
     const { error } = await supabase
       .from('messages')
       .insert({
@@ -221,6 +231,8 @@ Happy exploring! 🔥`,
 
     if (error) {
       console.error('Failed to send message:', error)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
       return
     }
 
@@ -229,16 +241,26 @@ Happy exploring! 🔥`,
       setAiLoading(true)
       try {
         const aiResponse = await sendMessageToAI(content, activeId)
-        // AI response is already saved by the API route
+        // Show AI response immediately (optimistic)
+        const aiMsg: Message = {
+          id: `ai-${Date.now()}`,
+          sender_id: AI_BOT_ID,
+          content: aiResponse,
+          created_at: new Date().toISOString(),
+          read: false,
+        }
+        setMessages(prev => [...prev, aiMsg])
       } catch (err) {
         console.error('AI response failed:', err)
-        // Show error in chat
-        await supabase.from('messages').insert({
-          conversation_id: activeId,
+        // Show error message in chat
+        const errMsg: Message = {
+          id: `err-${Date.now()}`,
           sender_id: AI_BOT_ID,
           content: "I'm having trouble connecting right now. Please try again in a moment.",
-          read: false
-        })
+          created_at: new Date().toISOString(),
+          read: false,
+        }
+        setMessages(prev => [...prev, errMsg])
       } finally {
         setAiLoading(false)
       }

@@ -5,13 +5,14 @@ export async function ensureWelcomeMessage(userId: string) {
   const supabase = createClient()
 
   // Check if user already has a conversation with the AI bot
-  const { data: existingConv } = await supabase
+  const { data: existingConvs } = await supabase
     .from('conversations')
-    .select('id')
-    .or(
-      `and(user1_id.eq.${userId},user2_id.eq.${AI_BOT_ID}),and(user1_id.eq.${AI_BOT_ID},user2_id.eq.${userId})`
-    )
-    .maybeSingle()
+    .select('id, user1_id, user2_id')
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+  
+  const existingConv = existingConvs?.find(c =>
+    c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
+  )
 
   // If they already have an AI conversation, skip
   if (existingConv) return
