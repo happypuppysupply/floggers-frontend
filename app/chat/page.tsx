@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { Send, Search, MoreVertical, Loader2, MessageSquare, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -28,7 +28,7 @@ interface Conversation {
   };
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -392,5 +392,19 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+
+// Wrapper with Suspense boundary for useSearchParams
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={32} className="text-rose animate-spin" />
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   )
 }
