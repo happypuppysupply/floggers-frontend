@@ -31,11 +31,33 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
     setLoading(true)
 
     try {
-      // Find existing conversation
+      // Look up the maker's profile_id (auth user UUID) from makers table
+      const { data: maker, error: makerError } = await supabase
+        .from('makers')
+        .select('profile_id')
+        .eq('id', makerId)
+        .single()
+
+      if (makerError || !maker?.profile_id) {
+        console.error('Failed to find maker profile:', makerError)
+        alert('Could not find maker profile. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const makerProfileId = maker.profile_id
+
+      if (user.id === makerProfileId) {
+        alert('You cannot message yourself')
+        setLoading(false)
+        return
+      }
+
+      // Find existing conversation with the maker
       const { data: existingConvs } = await supabase
         .from('conversations')
         .select('id')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${makerId}),and(user1_id.eq.${makerId},user2_id.eq.${user.id})`)
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${makerProfileId}),and(user1_id.eq.${makerProfileId},user2_id.eq.${user.id})`)
         .limit(1)
 
       let conversationId: string
@@ -43,10 +65,10 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
       if (existingConvs && existingConvs.length > 0) {
         conversationId = existingConvs[0].id
       } else {
-        // Create new conversation
+        // Create new conversation with the maker's profile_id
         const { data: newConv, error } = await supabase
           .from('conversations')
-          .insert({ user1_id: user.id, user2_id: makerId })
+          .insert({ user1_id: user.id, user2_id: makerProfileId })
           .select('id')
           .single()
 
@@ -60,7 +82,7 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
         // Send welcome message from maker
         await supabase.from('messages').insert({
           conversation_id: conversationId,
-          sender_id: makerId,
+          sender_id: makerProfileId,
           content: `Hi! Thanks for reaching out about my products. How can I help you today?`,
           read: false,
         })

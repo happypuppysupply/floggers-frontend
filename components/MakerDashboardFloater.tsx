@@ -40,22 +40,19 @@ export default function MakerDashboardFloater() {
         setIsVisible(true)
 
         // Load quick stats
-        const [{ count: productCount }, { data: orders }, { data: reviews }] = await Promise.all([
+        const [{ count: productCount }, { data: orders }, { data: makerData }] = await Promise.all([
           supabase.from('products').select('*', { count: 'exact', head: true }).eq('maker_id', maker.id),
           supabase.from('order_items').select('price, quantity').eq('maker_id', maker.id),
-          supabase.from('reviews').select('rating').eq('maker_id', maker.id)
+          supabase.from('makers').select('rating').eq('id', maker.id).single()
         ])
 
         const earnings = orders?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0
-        const avgRating = reviews?.length 
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
-          : 0
 
         setStats({
           products: productCount || 0,
           orders: orders?.length || 0,
           earnings,
-          rating: avgRating
+          rating: makerData?.rating || 0
         })
       } else {
         setIsMaker(false)

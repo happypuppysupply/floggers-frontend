@@ -486,19 +486,49 @@ export async function unfollowMaker(userId: string, makerId: string) {
 // NEW: Get related products
 export async function getRelatedProducts(productId: string, makerId?: string, categoryId?: string): Promise<Product[]> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc('get_related_products', {
-    p_product_id: productId,
-    p_maker_id: makerId || null,
-    p_category_id: categoryId || null,
-    p_limit: 6
-  });
+  
+  // Try RPC first, fallback to direct query
+  try {
+    const { data, error } = await supabase.rpc('get_related_products', {
+      p_product_id: productId,
+      p_maker_id: makerId || null,
+      p_category_id: categoryId || null,
+      p_limit: 6
+    });
 
+    if (!error) {
+      return data || [];
+    }
+  } catch (e) {
+    // RPC not available, fallback below
+  }
+
+  // Fallback: query products directly
+  let query = supabase
+    .from('products')
+    .select('*, maker:makers(name)')
+    .neq('id', productId)
+    .eq('is_active', true)
+    .limit(6);
+
+  if (makerId) {
+    query = query.eq('maker_id', makerId);
+  }
+  if (categoryId) {
+    query = query.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await query;
+  
   if (error) {
     console.error('Error fetching related products:', error);
     return [];
   }
 
-  return data || [];
+  return (data || []).map((p: any) => ({
+    ...p,
+    maker_name: p.maker?.name || 'Unknown'
+  }));
 }
 
 // NEW: Get products by maker (for "More from this shop")
