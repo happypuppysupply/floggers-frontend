@@ -871,7 +871,7 @@ export async function getUserFollowedMakers(userId: string) {
   // Then fetch maker details
   const { data: makers, error: makerError } = await supabase
     .from('makers')
-    .select('id, name, slug, avatar_url, location, bio, rating')
+    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
     .in('id', makerIds);
 
   if (makerError) {
@@ -895,7 +895,7 @@ export async function getSimilarMakers(makerId: string, limit: number = 6) {
   
   let query = supabase
     .from('makers')
-    .select('id, name, slug, avatar_url, location, bio, rating')
+    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
     .neq('id', makerId)
     .eq('is_verified', true)
     .limit(limit);
