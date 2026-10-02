@@ -9,9 +9,10 @@ import { useRouter } from 'next/navigation'
 interface MessageMakerButtonProps {
   makerId: string
   makerName: string
+  productName?: string
 }
 
-export default function MessageMakerButton({ makerId, makerName }: MessageMakerButtonProps) {
+export default function MessageMakerButton({ makerId, makerName, productName }: MessageMakerButtonProps) {
   const { user } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -74,11 +75,15 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
         }
         conversationId = newConv.id
 
-        // Send welcome message from maker
+        // Send welcome message from maker with product name if available
+        const welcomeMessage = productName 
+          ? `Hi! Thanks for your interest in "${productName}". How can I help you today?`
+          : `Hi! Thanks for reaching out about my products. How can I help you today?`
+        
         await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_id: makerProfileId,
-          content: `Hi! Thanks for reaching out about my products. How can I help you today?`,
+          content: welcomeMessage,
           read: false,
         })
       }

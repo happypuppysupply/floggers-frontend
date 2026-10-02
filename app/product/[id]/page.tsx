@@ -205,7 +205,8 @@ export default async function ProductPage({ params }: PageProps) {
             </Link>
             <MessageMakerButton 
               makerId={product.maker_id} 
-              makerName={product.maker?.name || 'Maker'} 
+              makerName={product.maker?.name || 'Maker'}
+              productName={product.name}
             />
           </div>
         </div>
