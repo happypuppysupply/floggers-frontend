@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { ShoppingBag, Menu, X, LogOut, Heart } from 'lucide-react'
+import { ShoppingBag, Menu, X, LogOut, Heart, MessageCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import BrandLogo from './BrandLogo'
@@ -10,7 +10,7 @@ import BrandLogo from './BrandLogo'
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
-  const { user, profile, loading, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
 
   useEffect(() => {
     if (user) {
@@ -63,6 +63,9 @@ export default function Navbar() {
                     <Link href="/dashboard/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <Heart size={16} /> Favorites
                     </Link>
+                    <Link href="/dashboard/messages" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
+                      <MessageCircle size={16} /> Chat
+                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="flex items-center gap-2 text-sm text-rose hover:text-rose-light transition-colors"
@@ -113,6 +116,9 @@ export default function Navbar() {
                 <>
                   <Link href="/dashboard/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <Heart size={16} /> Favorites
+                  </Link>
+                  <Link href="/dashboard/messages" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
+                    <MessageCircle size={16} /> Chat
                   </Link>
                   <button
                     onClick={() => { handleSignOut(); setOpen(false); }}

@@ -113,9 +113,9 @@ export default function MakerDashboardFloater() {
               <span className="text-xs">−</span>
             </button>
             <button
-              onClick={handleDismiss}
+              onClick={() => setIsExpanded(false)}
               className="text-white/70 hover:text-white p-1"
-              title="Dismiss"
+              title="Close"
             >
               <X size={16} />
             </button>

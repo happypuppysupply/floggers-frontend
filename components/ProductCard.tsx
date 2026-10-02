@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
-import { Product } from '@/lib/data';
+import { Heart, Loader2 } from 'lucide-react';
+import { Product, toggleFavorite, isFavorited } from '@/lib/data';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { useState, useEffect } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +13,38 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, compact = false }: ProductCardProps) {
   const image = product.image_url || product.images?.[0] || '/placeholder.jpg';
+  const { user } = useAuth();
+  const [favorited, setFavorited] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Check if already favorited
+  useEffect(() => {
+    if (user && product.id) {
+      checkFavorite();
+    }
+  }, [user, product.id]);
+
+  const checkFavorite = async () => {
+    if (!user) return;
+    const isFav = await isFavorited(user.id, product.id);
+    setFavorited(isFav);
+  };
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      // Redirect to login
+      window.location.href = '/login';
+      return;
+    }
+    setLoading(true);
+    const result = await toggleFavorite(user.id, product.id);
+    if (result.success) {
+      setFavorited(result.isFavorited);
+    }
+    setLoading(false);
+  };
 
   if (compact) {
     return (
@@ -25,9 +59,15 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
             className="w-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-110"
           />
           <button 
-            className="absolute top-2 right-2 p-2 rounded-full bg-noir-950/60 text-noir-400 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={handleFavoriteClick}
+            disabled={loading}
+            className={`absolute top-2 right-2 p-2 rounded-full transition-all ${
+              favorited 
+                ? 'bg-rose/80 text-white opacity-100' 
+                : 'bg-noir-950/60 text-noir-400 opacity-0 group-hover:opacity-100 hover:bg-rose/60 hover:text-white'
+            }`}
           >
-            <Heart size={16} />
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Heart size={16} className={favorited ? 'fill-white' : ''} />}
           </button>
         </div>
         <h3 className="text-sm text-noir-200 truncate group-hover:text-rose transition-colors">
@@ -51,9 +91,15 @@ export default function ProductCard({ product, compact = false }: ProductCardPro
           className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <button 
-          className="absolute top-3 right-3 p-2.5 rounded-full bg-noir-950/60 text-noir-400 hover:text-rose transition-colors"
+          onClick={handleFavoriteClick}
+          disabled={loading}
+          className={`absolute top-3 right-3 p-2.5 rounded-full transition-all ${
+            favorited 
+              ? 'bg-rose/80 text-white' 
+              : 'bg-noir-950/60 text-noir-400 hover:bg-rose/60 hover:text-white'
+          }`}
         >
-          <Heart size={18} />
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} className={favorited ? 'fill-white' : ''} />}
         </button>
       </div>
       <div className="p-5">
