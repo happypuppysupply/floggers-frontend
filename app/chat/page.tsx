@@ -5,6 +5,7 @@ import { Send, Search, MoreVertical, Loader2, MessageSquare, ChevronLeft } from 
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
 
 interface Message {
@@ -29,6 +30,9 @@ interface Conversation {
 
 export default function ChatPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const conversationParam = searchParams.get('conversation')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string>('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -44,6 +48,17 @@ export default function ChatPage() {
     if (!user) return
     loadConversations()
   }, [user])
+
+  // Auto-select conversation from URL param
+  useEffect(() => {
+    if (conversationParam && conversations.length > 0) {
+      const conv = conversations.find(c => c.id === conversationParam)
+      if (conv) {
+        setActiveId(conv.id)
+        setShowMobileChat(true)
+      }
+    }
+  }, [conversationParam, conversations])
 
   useEffect(() => {
     if (!activeId) return
