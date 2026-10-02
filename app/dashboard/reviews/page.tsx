@@ -50,6 +50,19 @@ export default function ReviewsPage() {
       return
     }
 
+    // Get product IDs for this maker
+    const { data: makerProducts } = await supabase
+      .from('products')
+      .select('id')
+      .eq('maker_id', maker.id)
+    
+    if (!makerProducts || makerProducts.length === 0) {
+      setLoading(false)
+      return
+    }
+
+    const productIds = makerProducts.map(p => p.id)
+
     // Get reviews for this maker's products
     const { data } = await supabase
       .from('reviews')
@@ -58,9 +71,7 @@ export default function ReviewsPage() {
         product:products(id, name, image_url),
         user:profiles(id, full_name)
       `)
-      .eq('product_id', 'in', 
-        supabase.from('products').select('id').eq('maker_id', maker.id)
-      )
+      .in('product_id', productIds)
       .order('created_at', { ascending: false })
 
     if (data) {

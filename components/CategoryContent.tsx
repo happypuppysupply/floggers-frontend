@@ -4,14 +4,31 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { SlidersHorizontal, Star, Search, ChevronDown, X } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
-import { products, categories } from '@/lib/mockData'
+import { createClient } from '@/lib/supabase/client'
+import { getCategories } from '@/lib/data'
+
+interface Product {
+  id: string
+  name: string
+  slug?: string
+  description?: string
+  price: number
+  image_url?: string
+  images?: string[]
+  category_id?: string
+  maker_id?: string
+  category?: { name: string; slug: string }
+  maker?: { name: string; slug?: string }
+  rating?: number
+  sales_count?: number
+}
 
 const sortOptions = [
   { value: 'featured', label: 'Featured' },
   { value: 'price-low', label: 'Price: Low to High' },
   { value: 'price-high', label: 'Price: High to Low' },
   { value: 'rating', label: 'Highest Rated' },
-  { value: 'reviews', label: 'Most Reviewed' },
+  { value: 'newest', label: 'Newest' },
 ]
 
 export default function CategoryContent() {
@@ -24,6 +41,38 @@ export default function CategoryContent() {
   const [sortBy, setSortBy] = useState('featured')
   const [showFilters, setShowFilters] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    setLoading(true)
+    
+    // Load products
+    const { data: productsData } = await supabase
+      .from('products')
+      .select(`
+        *,
+        maker:makers(name, slug),
+        category:categories(name, slug)
+      `)
+      .eq('is_active', true)
+    
+    if (productsData) {
+      setProducts(productsData)
+    }
+    
+    // Load categories
+    const cats = await getCategories()
+    setCategories(cats)
+    
+    setLoading(false)
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -37,21 +86,21 @@ export default function CategoryContent() {
 
   const filtered = useMemo(() => {
     let list = [...products]
-    if (selectedCategory) list = list.filter(p => p.category === selectedCategory)
+    if (selectedCategory) list = list.filter(p => p.category_id === selectedCategory || p.category?.slug === selectedCategory)
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
-        p.makerName.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+        p.maker?.name?.toLowerCase().includes(q) ||
+        p.category?.name?.toLowerCase().includes(q)
       )
     }
     if (sortBy === 'price-low') list.sort((a, b) => a.price - b.price)
     if (sortBy === 'price-high') list.sort((a, b) => b.price - a.price)
-    if (sortBy === 'rating') list.sort((a, b) => b.rating - a.rating)
-    if (sortBy === 'reviews') list.sort((a, b) => b.reviews - a.reviews)
+    if (sortBy === 'rating') list.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    if (sortBy === 'newest') list.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
     return list
-  }, [selectedCategory, search, sortBy])
+  }, [selectedCategory, search, sortBy, products])
 
   const searchSuggestions = [
     { type: 'category', label: 'Floggers', icon: '🔥' },
@@ -63,6 +112,14 @@ export default function CategoryContent() {
     { type: 'maker', label: 'Iron Heart Forge', icon: '👤' },
     { type: 'maker', label: 'Crimson Crest', icon: '👤' },
   ]
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <div className="animate-spin w-8 h-8 border-2 border-rose border-t-transparent rounded-full mx-auto" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -95,7 +152,7 @@ export default function CategoryContent() {
                       setSearch(item.label)
                       setShowSearchDropdown(false)
                       if (item.type === 'category') {
-                        const cat = categories.find(c => c.name.includes(item.label))?.id
+                        const cat = categories.find((c: any) => c.name.includes(item.label))?.id
                         if (cat) setSelectedCategory(cat)
                       }
                     }}
@@ -148,7 +205,7 @@ export default function CategoryContent() {
         <div className="flex flex-wrap gap-2 mb-4">
           {selectedCategory && (
             <span className="inline-flex items-center gap-1 bg-rose-dark/20 text-rose text-xs px-3 py-1.5 rounded-full">
-              {categories.find(c => c.id === selectedCategory)?.name}
+              {categories.find((c: any) => c.id === selectedCategory || c.slug === selectedCategory)?.name}
               <button onClick={() => setSelectedCategory('')} className="hover:text-noir-50"><X size={12} /></button>
             </span>
           )}
@@ -170,7 +227,7 @@ export default function CategoryContent() {
           >
             All
           </button>
-          {categories.map(cat => (
+          {categories.map((cat: any) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id === selectedCategory ? '' : cat.id)}
@@ -186,7 +243,7 @@ export default function CategoryContent() {
       {filtered.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filtered.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product as any} />
           ))}
         </div>
       ) : (

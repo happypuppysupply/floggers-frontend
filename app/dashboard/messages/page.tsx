@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, User, Search, MoreVertical, Loader2, MessageSquare, Bot } from 'lucide-react'
+import { Send, Search, MoreVertical, Loader2, MessageSquare, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
@@ -12,9 +12,6 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
-  sender?: {
-    full_name?: string;
-  };
 }
 
 interface Conversation {
@@ -37,64 +34,18 @@ export default function MessagesPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [showMobileChat, setShowMobileChat] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  // Load conversations and auto-create AI conversation if needed
+  // Load conversations once on mount
   useEffect(() => {
     if (!user) return
-    
-    const init = async () => {
-      await loadConversations()
-      
-      // Check if AI conversation exists, if not create it
-      const supabase = createClient()
-      const { data: existingConvs } = await supabase
-        .from('conversations')
-        .select('id, user1_id, user2_id')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-      
-      const existingConv = existingConvs?.find(c =>
-        c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
-      )
-      
-      if (!existingConv) {
-        // Create AI conversation with welcome message
-        const { data: newConv } = await supabase
-          .from('conversations')
-          .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
-          .select()
-          .single()
-        
-        if (newConv) {
-          await supabase.from('messages').insert({
-            conversation_id: newConv.id,
-            sender_id: AI_BOT_ID,
-            content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.
-
-**I can help you with:**
-• How to browse and buy products
-• How to become a seller
-• Product recommendations
-• Community guidelines
-• Troubleshooting
-
-Just send me a message anytime! I'm always here to help.
-
-Happy exploring! 🔥`,
-            read: false
-          })
-          
-          // Reload conversations to show the new AI chat
-          await loadConversations()
-        }
-      }
-    }
-    
-    init()
+    loadConversations()
   }, [user])
 
-  // Subscribe to messages
+  // Subscribe to messages for active conversation
   useEffect(() => {
     if (!activeId) return
 
@@ -128,55 +79,86 @@ Happy exploring! 🔥`,
       .order('updated_at', { ascending: false })
 
     if (data) {
-      // Fetch other user details for each conversation
-      const enriched = await Promise.all(
-        data.map(async (conv) => {
-          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
-          
-          // Handle AI bot
-          if (isAIUser(otherUserId)) {
-            return {
-              ...conv,
-              other_user: {
-                full_name: AI_BOT_NAME,
-                email: 'assistant@floggers.com',
-                avatar_url: AI_BOT_AVATAR
-              }
-            }
-          }
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, email, avatar_url')
-            .eq('id', otherUserId)
-            .single()
-          
-          return {
-            ...conv,
-            other_user: profile || undefined
-          }
-        })
+      // Check if AI conversation exists
+      const hasAIConversation = data.some(c =>
+        c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
       )
       
-      setConversations(enriched)
-      if (enriched.length > 0 && !activeId) {
-        setActiveId(enriched[0].id)
+      // Create AI conversation if missing
+      if (!hasAIConversation) {
+        const { data: newConv } = await supabase
+          .from('conversations')
+          .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
+          .select()
+          .single()
+        
+        if (newConv) {
+          await supabase.from('messages').insert({
+            conversation_id: newConv.id,
+            sender_id: AI_BOT_ID,
+            content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.\n\n**I can help you with:**\n• How to browse and buy products\n• How to become a seller\n• Product recommendations\n• Community guidelines\n• Troubleshooting\n\nJust send me a message anytime! I'm always here to help.\n\nHappy exploring! 🔥`,
+            read: false
+          })
+          
+          // Reload to include new AI conversation
+          const { data: updatedData } = await supabase
+            .from('conversations')
+            .select('*')
+            .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+            .order('updated_at', { ascending: false })
+          
+          if (updatedData) {
+            const enriched = await enrichConversations(updatedData)
+            setConversations(enriched)
+          }
+        }
+      } else {
+        const enriched = await enrichConversations(data)
+        setConversations(enriched)
       }
     }
     
     setLoading(false)
   }
 
+  const enrichConversations = async (data: any[]) => {
+    return await Promise.all(
+      data.map(async (conv) => {
+        const otherUserId = conv.user1_id === user?.id ? conv.user2_id : conv.user1_id
+        
+        // Handle AI bot
+        if (isAIUser(otherUserId)) {
+          return {
+            ...conv,
+            other_user: {
+              full_name: AI_BOT_NAME,
+              email: 'assistant@floggers.com',
+              avatar_url: AI_BOT_AVATAR
+            }
+          }
+        }
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, avatar_url')
+          .eq('id', otherUserId)
+          .single()
+        
+        return {
+          ...conv,
+          other_user: profile || undefined
+        }
+      })
+    )
+  }
+
   // Load messages when conversation changes
   useEffect(() => {
     if (!activeId || !user) return
-    
     loadMessages(activeId)
-  }, [activeId, user])
+  }, [activeId])
 
   const loadMessages = async (conversationId: string) => {
-    if (!conversationId) return
-    
     const { data, error } = await supabase
       .from('messages')
       .select(`
@@ -186,23 +168,10 @@ Happy exploring! 🔥`,
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
 
-    if (error) {
-      console.error('Error loading messages:', error)
-    }
-
     if (data) {
       setMessages(data)
-    } else {
-      setMessages([])
     }
   }
-
-  const [aiLoading, setAiLoading] = useState(false)
-
-  const activeConversation = conversations.find(c => c.id === activeId)
-  const isAIConversation = activeConversation ? isAIUser(
-    activeConversation.user1_id === user?.id ? activeConversation.user2_id : activeConversation.user1_id
-  ) : false
 
   const sendMessage = async () => {
     if (!input.trim() || !activeId || !user) return
@@ -210,7 +179,7 @@ Happy exploring! 🔥`,
     const content = input.trim()
     setInput('')
 
-    // Save user message to DB
+    // Save to DB
     const { data: newMessage, error } = await supabase
       .from('messages')
       .insert({
@@ -226,30 +195,32 @@ Happy exploring! 🔥`,
       return
     }
 
-    // Add the message to the UI immediately
+    // Add to UI
     if (newMessage) {
-      setMessages(prev => [...prev, newMessage as Message])
+      setMessages(prev => [...prev, newMessage])
     }
 
-    // If this is an AI conversation, get AI response
-    if (isAIConversation) {
-      setAiLoading(true)
-      try {
-        const aiResponse = await sendMessageToAI(content, activeId)
-        // AI response is saved by the API route, realtime subscription will pick it up
-      } catch (err) {
-        console.error('AI response failed:', err)
-        // Show error message in chat
-        const errMsg: Message = {
-          id: `err-${Date.now()}`,
-          sender_id: AI_BOT_ID,
-          content: "I'm having trouble connecting right now. Please try again in a moment.",
-          created_at: new Date().toISOString(),
-          read: false,
+    // Check if this is AI conversation
+    const activeConv = conversations.find(c => c.id === activeId)
+    if (activeConv) {
+      const otherId = activeConv.user1_id === user.id ? activeConv.user2_id : activeConv.user1_id
+      if (isAIUser(otherId)) {
+        setAiLoading(true)
+        try {
+          const aiResponse = await sendMessageToAI(content, activeId)
+          // Response stored by API + realtime subscription picks it up
+        } catch (err) {
+          console.error('AI response failed:', err)
+          setMessages(prev => [...prev, {
+            id: `err-${Date.now()}`,
+            sender_id: AI_BOT_ID,
+            content: "I'm having trouble connecting right now. Please try again in a moment.",
+            created_at: new Date().toISOString(),
+            read: false
+          }])
+        } finally {
+          setAiLoading(false)
         }
-        setMessages(prev => [...prev, errMsg])
-      } finally {
-        setAiLoading(false)
       }
     }
   }
@@ -264,6 +235,11 @@ Happy exploring! 🔥`,
     return name.includes(search.toLowerCase())
   })
 
+  const activeConversation = conversations.find(c => c.id === activeId)
+  const isAIConversation = activeConversation ? isAIUser(
+    activeConversation.user1_id === user?.id ? activeConversation.user2_id : activeConversation.user1_id
+  ) : false
+
   if (loading) {
     return (
       <div className="p-0">
@@ -277,8 +253,11 @@ Happy exploring! 🔥`,
   return (
     <div className="p-0 h-[calc(100vh-4rem)]">
       <div className="flex h-full">
-        {/* Sidebar - scrollable */}
-        <div className="w-80 border-r border-noir-800/50 flex flex-col h-full overflow-hidden">
+        {/* Sidebar - Conversations List */}
+        <div className={`
+          w-full md:w-80 border-r border-noir-800/50 flex flex-col h-full overflow-hidden
+          ${showMobileChat ? 'hidden md:flex' : 'flex'}
+        `}>
           <div className="p-4 border-b border-noir-800/50">
             <h1 className="font-serif italic text-xl text-noir-50 mb-3">Messages</h1>
             <div className="relative">
@@ -293,86 +272,6 @@ Happy exploring! 🔥`,
             </div>
           </div>
 
-          {/* AI Assistant - Now part of conversation list */}
-          {conversations.find(c => {
-            const otherId = c.user1_id === user?.id ? c.user2_id : c.user1_id
-            return isAIUser(otherId)
-          }) ? null : (
-            <div className="p-3 border-b border-noir-800/30">
-              <button
-                onClick={async () => {
-                  if (!user) return
-                  setLoading(true)
-                  const supabase = createClient()
-                  
-                  // Check if AI conversation exists
-                  const { data: existingConvs } = await supabase
-                    .from('conversations')
-                    .select('id, user1_id, user2_id')
-                    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-                  
-                  const existingConv = existingConvs?.find(c =>
-                    c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
-                  )
-                  
-                  if (existingConv) {
-                    setActiveId(existingConv.id)
-                  } else {
-                    // Create new AI conversation
-                    const { data: newConv, error: createError } = await supabase
-                      .from('conversations')
-                      .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
-                      .select()
-                      .single()
-                    
-                    if (createError) {
-                      console.error('Failed to create AI conversation:', createError)
-                      setLoading(false)
-                      return
-                    }
-                    
-                    if (newConv) {
-                      // Send welcome message
-                      await supabase.from('messages').insert({
-                        conversation_id: newConv.id,
-                        sender_id: AI_BOT_ID,
-                        content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.\n\n**I can help you with:**\n• How to browse and buy products\n• How to become a seller\n• Product recommendations\n• Community guidelines\n• Troubleshooting\n\nJust send me a message anytime! I'm always here to help.\n\nHappy exploring! 🔥`,
-                        read: false
-                      })
-                      
-                      // Add AI conversation to list immediately
-                      const aiConv = {
-                        ...newConv,
-                        other_user: {
-                          full_name: AI_BOT_NAME,
-                          email: 'assistant@floggers.com',
-                          avatar_url: AI_BOT_AVATAR
-                        }
-                      }
-                      setConversations(prev => [aiConv, ...prev])
-                      setActiveId(newConv.id)
-                    }
-                  }
-                  setLoading(false)
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-noir-800/30 border border-noir-700/50 hover:bg-noir-800/50 hover:border-rose/30 transition-colors text-left group"
-              >
-                <img 
-                  src={AI_BOT_AVATAR} 
-                  alt="" 
-                  className="w-10 h-10 rounded-full object-cover shrink-0 border border-noir-700 group-hover:border-rose/50"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-noir-200 flex items-center gap-2">
-                    <span className="text-rose">🤖</span>
-                    {AI_BOT_NAME}
-                  </p>
-                  <p className="text-xs text-rose/70">Click to start chatting</p>
-                </div>
-              </button>
-            </div>
-          )}
-
           <div className="flex-1 overflow-y-auto min-h-0">
             {conversations.length === 0 ? (
               <div className="p-4 text-center text-noir-400 text-sm">
@@ -381,26 +280,28 @@ Happy exploring! 🔥`,
             ) : (
               filteredConversations.map(c => {
                 const isAI = isAIUser(c.user1_id === user?.id ? c.user2_id : c.user1_id)
-                const avatarUrl = c.other_user?.avatar_url
                 return (
                 <button
                   key={c.id}
-                  onClick={() => setActiveId(c.id)}
+                  onClick={() => {
+                    setActiveId(c.id)
+                    setShowMobileChat(true)
+                  }}
                   className={`w-full flex items-center gap-3 p-4 border-b border-noir-800/30 hover:bg-noir-800/20 transition-colors text-left ${activeId === c.id ? 'bg-noir-800/30' : ''}`}
                 >
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 border border-noir-700" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0 overflow-hidden">
+                    {isAI ? (
+                      <span className="text-lg">🤖</span>
+                    ) : (
                       <span className="text-sm font-medium text-noir-200">
-                        {(c.other_user?.full_name?.[0] || c.other_user?.email?.[0] || '?').toUpperCase()}
+                        {(c.other_user?.full_name?.[0] || '?').toUpperCase()}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-noir-200 truncate">
                       {isAI && <span className="text-rose mr-1">🤖</span>}
-                      {c.other_user?.full_name || c.other_user?.email?.split('@')[0] || 'Unknown'}
+                      {c.other_user?.full_name || 'Unknown'}
                     </p>
                     <p className="text-xs text-noir-500 truncate">
                       {new Date(c.updated_at).toLocaleDateString()}
@@ -409,30 +310,40 @@ Happy exploring! 🔥`,
                 </button>
               )
             })
-            )}
+            }
           </div>
         </div>
 
-        {/* Chat Area - fixed, doesn't scroll with page */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Chat Area */}
+        <div className={`
+          flex-1 flex flex-col h-full overflow-hidden
+          ${showMobileChat ? 'flex' : 'hidden md:flex'}
+        `}>
           {activeConversation ? (
             <>
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-noir-800/50">
                 <div className="flex items-center gap-3">
-                  {activeConversation.other_user?.avatar_url ? (
-                    <img src={activeConversation.other_user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border border-noir-700" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
+                  {/* Back button for mobile */}
+                  <button 
+                    onClick={() => setShowMobileChat(false)}
+                    className="md:hidden p-2 -ml-2 text-noir-400 hover:text-noir-200"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
+                    {isAIConversation ? (
+                      <span className="text-sm">🤖</span>
+                    ) : (
                       <span className="text-sm font-medium text-noir-200">
-                        {(activeConversation.other_user?.full_name?.[0] || activeConversation.other_user?.email?.[0] || '?').toUpperCase()}
+                        {(activeConversation.other_user?.full_name?.[0] || '?').toUpperCase()}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <div>
-                    <p className="text-sm font-medium text-noir-200 flex items-center gap-2">
-                      {isAIConversation && <span className="text-rose">🤖</span>}
-                      {activeConversation.other_user?.full_name || activeConversation.other_user?.email?.split('@')[0] || 'Unknown'}
+                    <p className="text-sm font-medium text-noir-200">
+                      {isAIConversation && <span className="text-rose mr-1">🤖</span>}
+                      {activeConversation.other_user?.full_name || 'Unknown'}
                     </p>
                     {isAIConversation && <p className="text-[10px] text-rose/70">AI Assistant</p>}
                   </div>
@@ -442,7 +353,7 @@ Happy exploring! 🔥`,
                 </button>
               </div>
 
-              {/* Messages - scrollable area */}
+              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 ? (
                   <div className="text-center text-noir-500 py-12">
@@ -456,7 +367,7 @@ Happy exploring! 🔥`,
                           ? 'bg-rose-dark text-noir-50 rounded-br-md'
                           : 'bg-noir-800 text-noir-200 rounded-bl-md'
                       }`}>
-                        <p className="leading-relaxed">{msg.content}</p>
+                        <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         <p className={`text-[10px] mt-1 ${msg.sender_id === user?.id ? 'text-rose/60' : 'text-noir-500'}`}>
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
@@ -475,7 +386,7 @@ Happy exploring! 🔥`,
                 <div ref={bottomRef} />
               </div>
 
-              {/* Input - fixed at bottom */}
+              {/* Input */}
               <div className="p-4 border-t border-noir-800/50 flex-shrink-0">
                 <div className="flex items-end gap-2">
                   <div className="flex-1 bg-noir-900 border border-noir-700 rounded-2xl px-4 py-2.5">
