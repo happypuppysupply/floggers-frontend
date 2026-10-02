@@ -844,3 +844,32 @@ export async function getUserFavorites(userId: string): Promise<Product[]> {
     }
   }));
 }
+
+// Get followed makers for a user
+export async function getUserFollowedMakers(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('maker_follows')
+    .select(`
+      id,
+      maker:makers(
+        id,
+        name,
+        slug,
+        avatar_url,
+        location,
+        bio,
+        rating,
+        sales_count
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching followed makers:', error);
+    return [];
+  }
+
+  return (data || []).map((item: any) => item.maker).filter(Boolean);
+}
