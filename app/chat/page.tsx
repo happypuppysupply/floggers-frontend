@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
+import ProductMessageCard from '@/components/ProductMessageCard'
 
 interface Message {
   id: string;
@@ -14,6 +15,23 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+  product_id?: string;
+  metadata?: {
+    type?: string;
+    product?: {
+      id: string;
+      name: string;
+      price: number;
+      image_url?: string;
+      description?: string;
+      materials?: string[];
+      shipping_cost?: number;
+      shipping_time_min?: number;
+      shipping_time_max?: number;
+      free_shipping_over?: number;
+      maker_name?: string;
+    };
+  };
 }
 
 interface Conversation {
@@ -333,17 +351,28 @@ function ChatContent() {
                     <div className="text-center text-noir-500 py-12">No messages yet. Start the conversation!</div>
                   ) : (
                     messages.map(msg => (
-                      <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm ${
-                          msg.sender_id === user?.id
-                            ? 'bg-rose-dark text-noir-50 rounded-br-md'
-                            : 'bg-noir-800 text-noir-200 rounded-bl-md'
-                        }`}>
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                          <p className={`text-[10px] mt-1 ${msg.sender_id === user?.id ? 'text-rose/60' : 'text-noir-500'}`}>
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                      <div key={msg.id}>
+                        {/* Regular message */}
+                        <div className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm ${
+                            msg.sender_id === user?.id
+                              ? 'bg-rose-dark text-noir-50 rounded-br-md'
+                              : 'bg-noir-800 text-noir-200 rounded-bl-md'
+                          }`}>
+                            <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                            <p className={`text-[10px] mt-1 ${msg.sender_id === user?.id ? 'text-rose/60' : 'text-noir-500'}`}>
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
+                        {/* Product card attachment */}
+                        {msg.metadata?.product && (
+                          <div className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'} mt-2`}>
+                            <div className="max-w-[70%]">
+                              <ProductMessageCard product={msg.metadata.product} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}

@@ -6,13 +6,27 @@ import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+interface ProductData {
+  id: string
+  name: string
+  price: number
+  image_url?: string
+  description?: string
+  materials?: string[]
+  shipping_cost?: number
+  shipping_time_min?: number
+  shipping_time_max?: number
+  free_shipping_over?: number
+}
+
 interface MessageMakerButtonProps {
   makerId: string
   makerName: string
   productName?: string
+  product?: ProductData
 }
 
-export default function MessageMakerButton({ makerId, makerName, productName }: MessageMakerButtonProps) {
+export default function MessageMakerButton({ makerId, makerName, productName, product }: MessageMakerButtonProps) {
   const { user } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -75,16 +89,34 @@ export default function MessageMakerButton({ makerId, makerName, productName }: 
         }
         conversationId = newConv.id
 
-        // Send welcome message from maker with product name if available
+        // Build welcome message with product name
         const welcomeMessage = productName 
           ? `Hi! Thanks for your interest in "${productName}". How can I help you today?`
           : `Hi! Thanks for reaching out about my products. How can I help you today?`
         
+        // Insert welcome message with product context if available
         await supabase.from('messages').insert({
           conversation_id: conversationId,
           sender_id: makerProfileId,
           content: welcomeMessage,
           read: false,
+          product_id: product?.id || null,
+          metadata: product ? {
+            type: 'product_context',
+            product: {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image_url: product.image_url,
+              description: product.description,
+              materials: product.materials,
+              shipping_cost: product.shipping_cost,
+              shipping_time_min: product.shipping_time_min,
+              shipping_time_max: product.shipping_time_max,
+              free_shipping_over: product.free_shipping_over,
+              maker_name: makerName
+            }
+          } : null
         })
       }
 
