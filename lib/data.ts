@@ -64,9 +64,11 @@ export async function getProducts(options?: { featured?: boolean; limit?: number
   return data || [];
 }
 
-export async function getProductsByCategory(categoryId: string): Promise<Product[]> {
+export async function getProductsByCategory(categoryId: string, excludeProductId?: string, excludeMakerId?: string, limit?: number): Promise<Product[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  if (!categoryId) return [];
+
+  let query = supabase
     .from('products')
     .select(`
       *,
@@ -75,6 +77,18 @@ export async function getProductsByCategory(categoryId: string): Promise<Product
     .eq('is_active', true)
     .eq('category_id', categoryId)
     .order('created_at', { ascending: false });
+
+  if (excludeProductId) {
+    query = query.neq('id', excludeProductId);
+  }
+  if (excludeMakerId) {
+    query = query.neq('maker_id', excludeMakerId);
+  }
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching products by category:', error);
@@ -560,38 +574,7 @@ export async function getProductsByMaker(makerId: string, excludeProductId?: str
   return data || [];
 }
 
-// Get products by category (for "Similar Products")
-export async function getProductsByCategory(categoryId: string, excludeProductId?: string, excludeMakerId?: string, limit: number = 4): Promise<Product[]> {
-  const supabase = createClient();
-  if (!categoryId) return [];
-  
-  let query = supabase
-    .from('products')
-    .select(`
-      *,
-      maker:makers(name, slug)
-    `)
-    .eq('category_id', categoryId)
-    .eq('is_active', true);
-  
-  if (excludeProductId) {
-    query = query.neq('id', excludeProductId);
-  }
-  if (excludeMakerId) {
-    query = query.neq('maker_id', excludeMakerId);
-  }
-  
-  const { data, error } = await query
-    .order('rating', { ascending: false })
-    .limit(limit);
 
-  if (error) {
-    console.error('Error fetching similar products:', error);
-    return [];
-  }
-
-  return data || [];
-}
 
 // Message functions
 export async function getConversations(userId: string) {
