@@ -310,7 +310,7 @@ export default function MessagesPage() {
                 </button>
               )
             })
-            }
+            )}
           </div>
         </div>
 
