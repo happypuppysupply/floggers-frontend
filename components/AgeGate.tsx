@@ -58,10 +58,10 @@ export default function AgeGate() {
             Notice to Users
           </span>
           <p className="text-sm text-noir-300 leading-relaxed px-4">
-            This website contains age-restricted materials including nudity and explicit depictions 
-            of sexual activity. By entering, you affirm that you are at least 18 years of age or the 
-            age of majority in the jurisdiction you are accessing the website from and you 
-            consent to viewing sexually explicit content.
+            This website is an adults-only marketplace for BDSM & kink products.
+            By entering, you affirm that you are at least 18 years of age or the 
+            age of majority in the jurisdiction you are accessing the website from.
+            All products sold here are intended for consenting adults.
           </p>
         </div>
 
