@@ -885,10 +885,10 @@ export async function getUserFollowedMakers(userId: string) {
 export async function getSimilarMakers(makerId: string, limit: number = 6) {
   const supabase = createClient();
   
-  // Get the current maker's category/location to find similar ones
+  // Get the current maker's location to find similar ones
   const { data: currentMaker } = await supabase
     .from('makers')
-    .select('category_id, location')
+    .select('location')
     .eq('id', makerId)
     .single();
   
