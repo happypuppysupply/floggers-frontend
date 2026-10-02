@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Heart, Minus, Plus, Check, Loader2 } from 'lucide-react'
 import { Product } from '@/lib/data'
 import { useAuth } from '@/lib/auth/AuthProvider'
-import { addToCart } from '@/lib/data'
+import { addToCart, toggleFavorite, isFavorited } from '@/lib/data'
+import Link from 'next/link'
 
 interface AddToCartClientProps {
   product: Product
@@ -15,7 +16,22 @@ export default function AddToCartClient({ product }: AddToCartClientProps) {
   const [added, setAdded] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [error, setError] = useState('')
+  const [favorited, setFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
   const { user } = useAuth()
+
+  // Check if product is already favorited
+  useEffect(() => {
+    if (user && product.id) {
+      checkFavoriteStatus()
+    }
+  }, [user, product.id])
+
+  const checkFavoriteStatus = async () => {
+    if (!user) return
+    const isFav = await isFavorited(user.id, product.id)
+    setFavorited(isFav)
+  }
 
   const addToCartHandler = async () => {
     setAnimating(true)
@@ -62,6 +78,16 @@ export default function AddToCartClient({ product }: AddToCartClientProps) {
     }, 600)
   }
 
+  const toggleFavoriteHandler = async () => {
+    if (!user) return
+    setFavoriteLoading(true)
+    const result = await toggleFavorite(user.id, product.id)
+    if (result.success) {
+      setFavorited(result.isFavorited)
+    }
+    setFavoriteLoading(false)
+  }
+
   return (
     <div className="mb-8">
       {error && (
@@ -104,14 +130,30 @@ export default function AddToCartClient({ product }: AddToCartClientProps) {
             {added ? <><Check size={18} /> Added</> : 'Add to Cart'}
           </span>
         </button>
-        <button className="btn-secondary flex items-center gap-2">
-          <Heart size={18} /> Save
-        </button>
+        
+        {user ? (
+          <button 
+            onClick={toggleFavoriteHandler}
+            disabled={favoriteLoading}
+            className={`btn-secondary flex items-center gap-2 ${favorited ? 'text-rose border-rose/50' : ''}`}
+          >
+            {favoriteLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Heart size={18} className={favorited ? 'fill-rose' : ''} />
+            )}
+            {favorited ? 'Saved' : 'Save'}
+          </button>
+        ) : (
+          <Link href="/login" className="btn-secondary flex items-center gap-2">
+            <Heart size={18} /> Save
+          </Link>
+        )}
       </div>
       
       {!user && (
         <p className="text-xs text-noir-500 mt-4">
-          You can checkout as a guest, or <a href="/signup" className="text-rose hover:underline">create an account</a> to save your cart
+          You can checkout as a guest, or <a href="/signup" className="text-rose hover:underline">create an account</a> to save your cart and favorites
         </p>
       )}
     </div>

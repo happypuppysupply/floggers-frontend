@@ -6,6 +6,7 @@ import ProductReviews from '@/components/ProductReviews';
 import ShippingInfo from '@/components/ShippingInfo';
 import FollowButton from '@/components/FollowButton';
 import RelatedProducts from '@/components/RelatedProducts';
+import MessageMakerButton from '@/components/MessageMakerButton';
 import { Star, MapPin, Package, Shield, Clock, Award, Users, Store, MessageSquare } from 'lucide-react';
 
 interface PageProps {
@@ -202,9 +203,10 @@ export default async function ProductPage({ params }: PageProps) {
             >
               <Store size={16} /> Visit shop
             </Link>
-            <button className="flex-1 btn-secondary text-sm inline-flex items-center justify-center gap-2">
-              <MessageSquare size={16} /> Message maker
-            </button>
+            <MessageMakerButton 
+              makerId={product.maker_id} 
+              makerName={product.maker?.name || 'Maker'} 
+            />
           </div>
         </div>
       </div>

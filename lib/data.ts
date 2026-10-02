@@ -756,3 +756,61 @@ export async function getMakerReviews(makerId: string) {
 
   return data || [];
 }
+
+// Favorites/Wishlist functions
+export async function toggleFavorite(userId: string, productId: string): Promise<{ success: boolean; isFavorited: boolean; error?: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .rpc('toggle_favorite', {
+      p_user_id: userId,
+      p_product_id: productId
+    });
+
+  if (error) {
+    console.error('Error toggling favorite:', error);
+    return { success: false, isFavorited: false, error: error.message };
+  }
+
+  return { success: true, isFavorited: data };
+}
+
+export async function isFavorited(userId: string, productId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .rpc('is_favorited', {
+      p_user_id: userId,
+      p_product_id: productId
+    });
+
+  if (error) {
+    console.error('Error checking favorite:', error);
+    return false;
+  }
+
+  return data || false;
+}
+
+export async function getUserFavorites(userId: string): Promise<Product[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .rpc('get_user_favorites', {
+      p_user_id: userId
+    });
+
+  if (error) {
+    console.error('Error fetching favorites:', error);
+    return [];
+  }
+
+  return (data || []).map((item: any) => ({
+    id: item.product_id,
+    name: item.product_name,
+    slug: item.product_slug,
+    price: item.product_price,
+    image_url: item.product_image_url,
+    maker_id: item.maker_id,
+    maker: {
+      name: item.maker_name || 'Unknown'
+    }
+  }));
+}

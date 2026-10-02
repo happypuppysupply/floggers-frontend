@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getMakerById, getMakerBySlug, getProductsByMaker, getMakerFollowerCount, getMakerReviews } from '@/lib/data';
 import ProductCard from '@/components/ProductCard';
 import FollowButton from '@/components/FollowButton';
+import MessageMakerButton from '@/components/MessageMakerButton';
 import { Star, MapPin, Award, Calendar, Package, Users } from 'lucide-react';
 
 function isUUID(str: string) {
@@ -109,9 +110,10 @@ export default async function MakerPage({ params }: { params: { id: string } }) 
                 makerId={maker.id}
                 followerCount={followerCount}
               />
-              <button className="btn-secondary text-sm">
-                Message maker
-              </button>
+              <MessageMakerButton 
+                makerId={maker.id} 
+                makerName={maker.name} 
+              />
             </div>
           </div>
           
