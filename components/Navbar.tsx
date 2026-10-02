@@ -10,22 +10,30 @@ import BrandLogo from './BrandLogo'
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [favCount, setFavCount] = useState(0)
   const { user, loading, signOut } = useAuth()
 
   useEffect(() => {
     if (user) {
-      loadCartCount()
+      loadCounts()
     }
   }, [user])
 
-  const loadCartCount = async () => {
+  const loadCounts = async () => {
     const supabase = createClient()
-    const { count } = await supabase
-      .from('cart_items')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user?.id)
+    const [{ count: cartC }, { count: favC }] = await Promise.all([
+      supabase
+        .from('cart_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id),
+      supabase
+        .from('favorites')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+    ])
     
-    setCartCount(count || 0)
+    setCartCount(cartC || 0)
+    setFavCount(favC || 0)
   }
 
   const handleSignOut = async () => {
@@ -49,8 +57,16 @@ export default function Navbar() {
               <>
                 {user ? (
                   <>
-                    <Link href="/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
-                      <Heart size={16} /> Favorites
+                    <Link href="/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors relative">
+                      <div className="relative">
+                        <Heart size={16} />
+                        {favCount > 0 && (
+                          <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {favCount > 99 ? '99+' : favCount}
+                          </span>
+                        )}
+                      </div>
+                      <span>Favorites</span>
                     </Link>
                     <Link href="/chat" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <MessageCircle size={16} /> Chat
@@ -103,8 +119,16 @@ export default function Navbar() {
             <>
               {user ? (
                 <>
-                  <Link href="/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
-                    <Heart size={16} /> Favorites
+                  <Link href="/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2 relative">
+                    <div className="relative">
+                      <Heart size={16} />
+                      {favCount > 0 && (
+                        <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {favCount > 99 ? '99+' : favCount}
+                        </span>
+                      )}
+                    </div>
+                    Favorites
                   </Link>
                   <Link href="/chat" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <MessageCircle size={16} /> Chat
