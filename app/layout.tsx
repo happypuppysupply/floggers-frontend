@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth/AuthProvider'
 import Navbar from '@/components/Navbar'
 import ConditionalFooter from '@/components/ConditionalFooter'
 import BecomeSellerFloater from '@/components/BecomeSellerFloater'
+import MakerDashboardFloater from '@/components/MakerDashboardFloater'
 
 export const metadata: Metadata = {
   title: 'Floggers — BDSM Marketplace',
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1">{children}</main>
           <ConditionalFooter />
           <BecomeSellerFloater />
+          <MakerDashboardFloater />
         </AuthProvider>
       </body>
     </html>

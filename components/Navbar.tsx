@@ -63,9 +63,6 @@ export default function Navbar() {
                     <Link href="/dashboard/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <Heart size={16} /> Favorites
                     </Link>
-                    <Link href="/dashboard" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">
-                      Dashboard
-                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="flex items-center gap-2 text-sm text-rose hover:text-rose-light transition-colors"
@@ -117,7 +114,6 @@ export default function Navbar() {
                   <Link href="/dashboard/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <Heart size={16} /> Favorites
                   </Link>
-                  <Link href="/dashboard" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Dashboard</Link>
                   <button
                     onClick={() => { handleSignOut(); setOpen(false); }}
                     className="block text-rose hover:text-rose-light py-2 w-full text-left"
