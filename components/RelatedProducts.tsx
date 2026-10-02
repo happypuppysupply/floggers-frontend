@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getProductsByMaker, getRelatedProducts, getFeaturedProducts, getMakerById } from '@/lib/data'
+import { getProductsByMaker, getProductsByCategory, getRelatedProducts, getMakerById } from '@/lib/data'
 import ProductCard from './ProductCard'
 
 interface Product {
@@ -31,6 +31,7 @@ export default function RelatedProducts({
   makerSlug
 }: RelatedProductsProps) {
   const [makerProducts, setMakerProducts] = useState<Product[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [makerLinkSlug, setMakerLinkSlug] = useState<string>(makerSlug || makerId);
@@ -45,6 +46,12 @@ export default function RelatedProducts({
     // Get "More from this shop"
     const makerProds = await getProductsByMaker(makerId, productId, 4);
     setMakerProducts(makerProds);
+    
+    // Get "Similar Products" from same category (different makers)
+    if (categoryId) {
+      const similarProds = await getProductsByCategory(categoryId, productId, makerId, 4);
+      setSimilarProducts(similarProds);
+    }
     
     // Get "You may also like" - only if IDs are valid UUIDs
     // Validate UUID format before calling RPC
@@ -95,6 +102,27 @@ export default function RelatedProducts({
                 product={{
                   ...product,
                   maker: { name: makerName }
+                }} 
+                compact 
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Similar Products */}
+      {similarProducts.length > 0 && (
+        <div className="mb-12">
+          <h2 className="font-serif italic text-xl text-noir-50 mb-6">
+            Similar Products
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {similarProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                product={{
+                  ...product,
+                  maker: { name: product.maker_name || 'Unknown' }
                 }} 
                 compact 
               />

@@ -560,6 +560,39 @@ export async function getProductsByMaker(makerId: string, excludeProductId?: str
   return data || [];
 }
 
+// Get products by category (for "Similar Products")
+export async function getProductsByCategory(categoryId: string, excludeProductId?: string, excludeMakerId?: string, limit: number = 4): Promise<Product[]> {
+  const supabase = createClient();
+  if (!categoryId) return [];
+  
+  let query = supabase
+    .from('products')
+    .select(`
+      *,
+      maker:makers(name, slug)
+    `)
+    .eq('category_id', categoryId)
+    .eq('is_active', true);
+  
+  if (excludeProductId) {
+    query = query.neq('id', excludeProductId);
+  }
+  if (excludeMakerId) {
+    query = query.neq('maker_id', excludeMakerId);
+  }
+  
+  const { data, error } = await query
+    .order('rating', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching similar products:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // Message functions
 export async function getConversations(userId: string) {
   const supabase = createClient();

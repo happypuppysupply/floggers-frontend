@@ -174,9 +174,6 @@ export default async function MakerPage({ params }: { params: { id: string } }) 
           )}
         </div>
 
-        {/* Similar Makers Carousel */}
-        <SimilarMakers currentMakerId={maker.id} />
-
         {/* Reviews Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -246,6 +243,9 @@ export default async function MakerPage({ params }: { params: { id: string } }) 
             </div>
           )}
         </div>
+
+        {/* Similar Makers Carousel */}
+        <SimilarMakers currentMakerId={maker.id} />
       </div>
     </div>
   );
