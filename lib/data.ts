@@ -848,28 +848,68 @@ export async function getUserFavorites(userId: string): Promise<Product[]> {
 // Get followed makers for a user
 export async function getUserFollowedMakers(userId: string) {
   const supabase = createClient();
-  const { data, error } = await supabase
+  
+  // First get the maker IDs
+  const { data: follows, error: followError } = await supabase
     .from('maker_follows')
-    .select(`
-      id,
-      maker:makers(
-        id,
-        name,
-        slug,
-        avatar_url,
-        location,
-        bio,
-        rating,
-        sales_count
-      )
-    `)
+    .select('maker_id')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching followed makers:', error);
+  if (followError) {
+    console.error('Error fetching follows:', followError);
     return [];
   }
 
-  return (data || []).map((item: any) => item.maker).filter(Boolean);
+  if (!follows || follows.length === 0) {
+    return [];
+  }
+
+  const makerIds = follows.map((f: any) => f.maker_id);
+
+  // Then fetch maker details
+  const { data: makers, error: makerError } = await supabase
+    .from('makers')
+    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
+    .in('id', makerIds);
+
+  if (makerError) {
+    console.error('Error fetching makers:', makerError);
+    return [];
+  }
+
+  return makers || [];
+}
+
+// Get similar makers (for carousel)
+export async function getSimilarMakers(makerId: string, limit: number = 6) {
+  const supabase = createClient();
+  
+  // Get the current maker's category/location to find similar ones
+  const { data: currentMaker } = await supabase
+    .from('makers')
+    .select('category_id, location')
+    .eq('id', makerId)
+    .single();
+  
+  let query = supabase
+    .from('makers')
+    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
+    .neq('id', makerId)
+    .eq('is_verified', true)
+    .limit(limit);
+  
+  if (currentMaker?.location) {
+    // Prioritize same location
+    query = query.order('location', { ascending: false });
+  }
+  
+  const { data, error } = await query.order('rating', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching similar makers:', error);
+    return [];
+  }
+
+  return data || [];
 }

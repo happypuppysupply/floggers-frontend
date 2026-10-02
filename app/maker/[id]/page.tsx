@@ -4,6 +4,7 @@ import { getMakerById, getMakerBySlug, getProductsByMaker, getMakerFollowerCount
 import ProductCard from '@/components/ProductCard';
 import FollowButton from '@/components/FollowButton';
 import MessageMakerButton from '@/components/MessageMakerButton';
+import SimilarMakers from '@/components/SimilarMakers';
 import { Star, MapPin, Award, Calendar, Package, Users } from 'lucide-react';
 
 function isUUID(str: string) {
@@ -172,6 +173,9 @@ export default async function MakerPage({ params }: { params: { id: string } }) 
             </div>
           )}
         </div>
+
+        {/* Similar Makers Carousel */}
+        <SimilarMakers currentMakerId={maker.id} />
 
         {/* Reviews Section */}
         <div>
