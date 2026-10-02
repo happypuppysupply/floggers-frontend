@@ -23,24 +23,19 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
       return
     }
 
-    if (user.id === makerId) {
-      alert('You cannot message yourself')
-      return
-    }
-
     setLoading(true)
 
     try {
       // Look up the maker's profile_id (auth user UUID) from makers table
       const { data: maker, error: makerError } = await supabase
         .from('makers')
-        .select('profile_id')
+        .select('id, profile_id, name')
         .eq('id', makerId)
-        .single()
+        .maybeSingle()
 
       if (makerError || !maker?.profile_id) {
-        console.error('Failed to find maker profile:', makerError)
-        alert('Could not find maker profile. Please try again.')
+        console.error('Failed to find maker profile:', makerError, { makerId, maker })
+        alert('Could not find maker. This product may not have an associated maker account.')
         setLoading(false)
         return
       }
