@@ -6,6 +6,7 @@ import ConditionalFooter from '@/components/ConditionalFooter'
 import BecomeSellerFloater from '@/components/BecomeSellerFloater'
 import MakerDashboardFloater from '@/components/MakerDashboardFloater'
 import AgeGate from '@/components/AgeGate'
+import ScrollToTop from '@/components/ScrollToTop'
 
 export const metadata: Metadata = {
   title: 'Floggers — BDSM Marketplace',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen flex flex-col">
         <AuthProvider>
+          <ScrollToTop />
           <Navbar />
           <main className="flex-1">{children}</main>
           <ConditionalFooter />

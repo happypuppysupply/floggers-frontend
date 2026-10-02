@@ -22,10 +22,10 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-medium text-noir-200 mb-4 uppercase tracking-wider">Trust & Safety</h4>
             <ul className="space-y-2">
-              <li><span className="text-sm text-noir-400">Age-verified marketplace</span></li>
-              <li><span className="text-sm text-noir-400">Discreet shipping on all orders</span></li>
-              <li><span className="text-sm text-noir-400">Maker verification program</span></li>
-              <li><span className="text-sm text-noir-400">Community guidelines</span></li>
+              <li><Link href="/age-verification" className="text-sm text-noir-400 hover:text-noir-200 transition-colors">Age-verified marketplace</Link></li>
+              <li><Link href="/discreet-shipping" className="text-sm text-noir-400 hover:text-noir-200 transition-colors">Discreet shipping on all orders</Link></li>
+              <li><Link href="/maker-verification" className="text-sm text-noir-400 hover:text-noir-200 transition-colors">Maker verification program</Link></li>
+              <li><Link href="/community-guidelines" className="text-sm text-noir-400 hover:text-noir-200 transition-colors">Community guidelines</Link></li>
             </ul>
           </div>
         </div>
