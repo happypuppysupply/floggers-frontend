@@ -66,7 +66,7 @@ export default function MessageMakerButton({ makerId, makerName }: MessageMakerB
         })
       }
 
-      router.push(`/dashboard/messages?conversation=${conversationId}`)
+      router.push(`/chat?conversation=${conversationId}`)
     } catch (err) {
       console.error('Error:', err)
     } finally {

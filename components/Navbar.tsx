@@ -49,10 +49,10 @@ export default function Navbar() {
               <>
                 {user ? (
                   <>
-                    <Link href="/dashboard/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
+                    <Link href="/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <Heart size={16} /> Favorites
                     </Link>
-                    <Link href="/dashboard/messages" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
+                    <Link href="/chat" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <MessageCircle size={16} /> Chat
                     </Link>
                     <Link href="/cart" className="flex items-center gap-2 text-sm text-noir-300 hover:text-noir-50 transition-colors relative">
@@ -103,10 +103,10 @@ export default function Navbar() {
             <>
               {user ? (
                 <>
-                  <Link href="/dashboard/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
+                  <Link href="/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <Heart size={16} /> Favorites
                   </Link>
-                  <Link href="/dashboard/messages" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
+                  <Link href="/chat" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <MessageCircle size={16} /> Chat
                   </Link>
                   <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2 relative">
