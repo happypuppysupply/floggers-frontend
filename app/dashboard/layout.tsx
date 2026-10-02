@@ -20,8 +20,7 @@ import {
   Menu,
   X,
   Loader2,
-  Star,
-  Heart
+  Star
 } from 'lucide-react'
 
 const navItems = [
@@ -29,7 +28,6 @@ const navItems = [
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/dashboard/messages', label: 'Messages', icon: MessageCircle },
-  { href: '/dashboard/favorites', label: 'Favorites', icon: Heart },
   { href: '/dashboard/reviews', label: 'Reviews', icon: Star },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
   { href: '/dashboard/customers', label: 'Customers', icon: Users },

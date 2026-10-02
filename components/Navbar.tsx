@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { ShoppingBag, Menu, X, LogOut } from 'lucide-react'
+import { ShoppingBag, Menu, X, LogOut, Heart } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import BrandLogo from './BrandLogo'
@@ -60,6 +60,9 @@ export default function Navbar() {
               <>
                 {user ? (
                   <>
+                    <Link href="/dashboard/favorites" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
+                      <Heart size={16} /> Favorites
+                    </Link>
                     <Link href="/dashboard" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       Dashboard
                     </Link>
@@ -111,6 +114,9 @@ export default function Navbar() {
             <>
               {user ? (
                 <>
+                  <Link href="/dashboard/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
+                    <Heart size={16} /> Favorites
+                  </Link>
                   <Link href="/dashboard" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Dashboard</Link>
                   <button
                     onClick={() => { handleSignOut(); setOpen(false); }}
