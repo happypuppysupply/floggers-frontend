@@ -44,17 +44,6 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-8">
             <Link href="/category" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">Browse</Link>
             <Link href="/makers" className="text-sm text-noir-300 hover:text-noir-50 transition-colors">Makers</Link>
-            <Link href="/cart" className="flex items-center gap-2 text-sm text-noir-300 hover:text-noir-50 transition-colors relative">
-              <div className="relative">
-                <ShoppingBag size={18} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </div>
-              <span>Cart</span>
-            </Link>
             
             {!loading && (
               <>
@@ -65,6 +54,17 @@ export default function Navbar() {
                     </Link>
                     <Link href="/dashboard/messages" className="flex items-center gap-1.5 text-sm text-noir-300 hover:text-noir-50 transition-colors">
                       <MessageCircle size={16} /> Chat
+                    </Link>
+                    <Link href="/cart" className="flex items-center gap-2 text-sm text-noir-300 hover:text-noir-50 transition-colors relative">
+                      <div className="relative">
+                        <ShoppingBag size={18} />
+                        {cartCount > 0 && (
+                          <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {cartCount > 99 ? '99+' : cartCount}
+                          </span>
+                        )}
+                      </div>
+                      <span>Cart</span>
                     </Link>
                     <button
                       onClick={handleSignOut}
@@ -98,17 +98,6 @@ export default function Navbar() {
         <div className="md:hidden border-t border-noir-800/50 bg-noir-950 px-4 pb-4 space-y-3">
           <Link href="/category" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Browse</Link>
           <Link href="/makers" onClick={() => setOpen(false)} className="block text-noir-300 hover:text-noir-50 py-2">Makers</Link>
-          <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2 relative">
-            <div className="relative">
-              <ShoppingBag size={18} />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
-            </div>
-            Cart
-          </Link>
           
           {!loading && (
             <>
@@ -119,6 +108,17 @@ export default function Navbar() {
                   </Link>
                   <Link href="/dashboard/messages" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2">
                     <MessageCircle size={16} /> Chat
+                  </Link>
+                  <Link href="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2 text-noir-300 hover:text-noir-50 py-2 relative">
+                    <div className="relative">
+                      <ShoppingBag size={18} />
+                      {cartCount > 0 && (
+                        <span className="absolute -top-2 -right-2 w-4 h-4 bg-rose text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                      )}
+                    </div>
+                    Cart
                   </Link>
                   <button
                     onClick={() => { handleSignOut(); setOpen(false); }}
