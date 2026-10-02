@@ -771,12 +771,13 @@ export async function getOrCreateConversation(user1Id: string, user2Id: string) 
 export async function getMakerReviews(makerId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('maker_reviews')
+    .from('reviews')
     .select(`
       *,
+      product:products(name, slug, image_url, maker_id),
       reviewer:profiles(full_name, avatar_url)
     `)
-    .eq('maker_id', makerId)
+    .eq('product.maker_id', makerId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -870,7 +871,7 @@ export async function getUserFollowedMakers(userId: string) {
   // Then fetch maker details
   const { data: makers, error: makerError } = await supabase
     .from('makers')
-    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
+    .select('id, name, slug, avatar_url, location, bio, rating')
     .in('id', makerIds);
 
   if (makerError) {
@@ -894,7 +895,7 @@ export async function getSimilarMakers(makerId: string, limit: number = 6) {
   
   let query = supabase
     .from('makers')
-    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
+    .select('id, name, slug, avatar_url, location, bio, rating')
     .neq('id', makerId)
     .eq('is_verified', true)
     .limit(limit);

@@ -98,24 +98,14 @@ export default function ProductReviews({ productId }: { productId: string }) {
   const checkPurchaseStatus = async () => {
     if (!user) return
     
+    // Use RPC function instead of direct query to handle status variations
     const { data } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .limit(1)
-      .single()
+      .rpc('user_purchased_product', {
+        p_user_id: user.id,
+        p_product_id: productId
+      })
     
-    if (data) {
-      // Check if order contains this product
-      const { count } = await supabase
-        .from('order_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('order_id', data.id)
-        .eq('product_id', productId)
-      
-      setHasPurchased(count > 0)
-    }
+    setHasPurchased(data || false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
