@@ -71,11 +71,13 @@ export default function MessageMakerButton({ makerId, makerName, productName, pr
         .limit(1)
 
       let conversationId: string
+      let isNewConversation = false
 
       if (existingConvs && existingConvs.length > 0) {
         conversationId = existingConvs[0].id
       } else {
         // Create new conversation with the maker's profile_id
+        isNewConversation = true
         const { data: newConv, error } = await supabase
           .from('conversations')
           .insert({ user1_id: user.id, user2_id: makerProfileId })
@@ -88,20 +90,20 @@ export default function MessageMakerButton({ makerId, makerName, productName, pr
           return
         }
         conversationId = newConv.id
+      }
 
-        // Build welcome message with product name
-        const welcomeMessage = productName 
-          ? `Hi! Thanks for your interest in "${productName}". How can I help you today?`
-          : `Hi! Thanks for reaching out about my products. How can I help you today?`
+      // ALWAYS send product context message when clicking from a product
+      // This ensures the product card shows up even in existing conversations
+      if (product) {
+        const contextMessage = `I'm interested in this product:`
         
-        // Insert welcome message with product context if available
         await supabase.from('messages').insert({
           conversation_id: conversationId,
-          sender_id: makerProfileId,
-          content: welcomeMessage,
+          sender_id: user.id,
+          content: contextMessage,
           read: false,
-          product_id: product?.id || null,
-          metadata: product ? {
+          product_id: product.id,
+          metadata: {
             type: 'product_context',
             product: {
               id: product.id,
@@ -116,7 +118,21 @@ export default function MessageMakerButton({ makerId, makerName, productName, pr
               free_shipping_over: product.free_shipping_over,
               maker_name: makerName
             }
-          } : null
+          }
+        })
+      }
+
+      // Send welcome message only for NEW conversations
+      if (isNewConversation) {
+        const welcomeMessage = productName 
+          ? `Hi! Thanks for your interest in "${productName}". How can I help you today?`
+          : `Hi! Thanks for reaching out about my products. How can I help you today?`
+        
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: makerProfileId,
+          content: welcomeMessage,
+          read: false,
         })
       }
 

@@ -243,18 +243,18 @@ function ChatContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
         <Loader2 size={32} className="text-rose animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-noir-950">
+    <div className="h-[calc(100vh-4rem)] bg-noir-950">
       {/* Chat Interface — Same as dashboard/messages but full width */}
-      <div className="h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="border-b border-noir-800/50 bg-noir-900/50 px-4 py-3 flex items-center gap-4">
+        <div className="border-b border-noir-800/50 bg-noir-900/50 px-4 py-3 flex items-center gap-4 shrink-0">
           <Link href="/" className="p-2 -ml-2 text-noir-400 hover:text-noir-200 transition-colors">
             <ChevronLeft size={20} />
           </Link>
