@@ -5,6 +5,8 @@ import { Send, Search, MoreVertical, Loader2, MessageSquare, ChevronLeft } from 
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { AI_BOT_ID, AI_BOT_NAME, AI_BOT_AVATAR, isAIUser, sendMessageToAI } from '@/lib/ai'
+import { usePresence } from '@/lib/usePresence'
+import { formatLastActive, isOnline } from '@/lib/time'
 
 interface Message {
   id: string;
@@ -23,6 +25,7 @@ interface Conversation {
     full_name?: string;
     email?: string;
     avatar_url?: string;
+    last_active?: string;
   };
 }
 
@@ -38,6 +41,9 @@ export default function MessagesPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  // Track my online presence
+  usePresence(user?.id)
 
   // Load conversations once on mount
   useEffect(() => {
@@ -65,13 +71,22 @@ export default function MessagesPage() {
     return () => {
       channel.unsubscribe()
     }
-  }, [activeId])
+  }, [activeId, supabase])
+
+  // Poll presence of other users every 30s (refreshes dots & last active)
+  useEffect(() => {
+    if (!conversations.length) return
+    const interval = setInterval(() => {
+      refreshPresence()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [conversations.length])
 
   const loadConversations = async () => {
     if (!user) return
-    
+
     setLoading(true)
-    
+
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -79,19 +94,17 @@ export default function MessagesPage() {
       .order('updated_at', { ascending: false })
 
     if (data) {
-      // Check if AI conversation exists
       const hasAIConversation = data.some(c =>
         c.user1_id === AI_BOT_ID || c.user2_id === AI_BOT_ID
       )
-      
-      // Create AI conversation if missing
+
       if (!hasAIConversation) {
         const { data: newConv } = await supabase
           .from('conversations')
           .insert({ user1_id: user.id, user2_id: AI_BOT_ID })
           .select()
           .single()
-        
+
         if (newConv) {
           await supabase.from('messages').insert({
             conversation_id: newConv.id,
@@ -99,14 +112,13 @@ export default function MessagesPage() {
             content: `Welcome to Floggers! 👋 I'm your AI assistant, here to help you navigate the marketplace.\n\n**I can help you with:**\n• How to browse and buy products\n• How to become a seller\n• Product recommendations\n• Community guidelines\n• Troubleshooting\n\nJust send me a message anytime! I'm always here to help.\n\nHappy exploring! 🔥`,
             read: false
           })
-          
-          // Reload to include new AI conversation
+
           const { data: updatedData } = await supabase
             .from('conversations')
             .select('*')
             .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
             .order('updated_at', { ascending: false })
-          
+
           if (updatedData) {
             const enriched = await enrichConversations(updatedData)
             setConversations(enriched)
@@ -117,7 +129,7 @@ export default function MessagesPage() {
         setConversations(enriched)
       }
     }
-    
+
     setLoading(false)
   }
 
@@ -125,25 +137,25 @@ export default function MessagesPage() {
     return await Promise.all(
       data.map(async (conv) => {
         const otherUserId = conv.user1_id === user?.id ? conv.user2_id : conv.user1_id
-        
-        // Handle AI bot
+
         if (isAIUser(otherUserId)) {
           return {
             ...conv,
             other_user: {
               full_name: AI_BOT_NAME,
               email: 'assistant@floggers.com',
-              avatar_url: AI_BOT_AVATAR
+              avatar_url: AI_BOT_AVATAR,
+              last_active: new Date().toISOString()
             }
           }
         }
-        
+
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, email, avatar_url')
+          .select('full_name, email, avatar_url, last_active')
           .eq('id', otherUserId)
           .single()
-        
+
         return {
           ...conv,
           other_user: profile || undefined
@@ -152,11 +164,38 @@ export default function MessagesPage() {
     )
   }
 
-  // Load messages when conversation changes
+  // Refresh last_active for loaded conversations without full reload
+  const refreshPresence = async () => {
+    const otherUserIds = conversations
+      .map(c => c.user1_id === user?.id ? c.user2_id : c.user1_id)
+      .filter(id => !isAIUser(id))
+
+    if (!otherUserIds.length) return
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, last_active')
+      .in('id', otherUserIds)
+
+    if (data) {
+      setConversations(prev => prev.map(c => {
+        const otherId = c.user1_id === user?.id ? c.user2_id : c.user1_id
+        const fresh = data.find(p => p.id === otherId)
+        if (fresh) {
+          return {
+            ...c,
+            other_user: { ...c.other_user, last_active: fresh.last_active }
+          }
+        }
+        return c
+      }))
+    }
+  }
+
   useEffect(() => {
     if (!activeId || !user) return
     loadMessages(activeId)
-  }, [activeId])
+  }, [activeId, user])
 
   const loadMessages = async (conversationId: string) => {
     const { data, error } = await supabase
@@ -179,7 +218,6 @@ export default function MessagesPage() {
     const content = input.trim()
     setInput('')
 
-    // Save to DB
     const { data: newMessage, error } = await supabase
       .from('messages')
       .insert({
@@ -195,12 +233,10 @@ export default function MessagesPage() {
       return
     }
 
-    // Add to UI
     if (newMessage) {
       setMessages(prev => [...prev, newMessage])
     }
 
-    // Check if this is AI conversation
     const activeConv = conversations.find(c => c.id === activeId)
     if (activeConv) {
       const otherId = activeConv.user1_id === user.id ? activeConv.user2_id : activeConv.user1_id
@@ -208,7 +244,6 @@ export default function MessagesPage() {
         setAiLoading(true)
         try {
           const aiResponse = await sendMessageToAI(content, activeId)
-          // Response stored by API + realtime subscription picks it up
         } catch (err) {
           console.error('AI response failed:', err)
           setMessages(prev => [...prev, {
@@ -236,9 +271,10 @@ export default function MessagesPage() {
   })
 
   const activeConversation = conversations.find(c => c.id === activeId)
-  const isAIConversation = activeConversation ? isAIUser(
-    activeConversation.user1_id === user?.id ? activeConversation.user2_id : activeConversation.user1_id
-  ) : false
+  const activeOtherId = activeConversation
+    ? (activeConversation.user1_id === user?.id ? activeConversation.user2_id : activeConversation.user1_id)
+    : null
+  const isAIConversation = activeOtherId ? isAIUser(activeOtherId) : false
 
   if (loading) {
     return (
@@ -279,37 +315,60 @@ export default function MessagesPage() {
               </div>
             ) : (
               filteredConversations.map(c => {
-                const isAI = isAIUser(c.user1_id === user?.id ? c.user2_id : c.user1_id)
+                const otherUserId = c.user1_id === user?.id ? c.user2_id : c.user1_id
+                const isAI = isAIUser(otherUserId)
+                const online = isOnline(c.other_user?.last_active)
+                const lastActive = formatLastActive(c.other_user?.last_active)
+
                 return (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    setActiveId(c.id)
-                    setShowMobileChat(true)
-                  }}
-                  className={`w-full flex items-center gap-3 p-4 border-b border-noir-800/30 hover:bg-noir-800/20 transition-colors text-left ${activeId === c.id ? 'bg-noir-800/30' : ''}`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center shrink-0 overflow-hidden">
-                    {isAI ? (
-                      <span className="text-lg">🤖</span>
-                    ) : (
-                      <span className="text-sm font-medium text-noir-200">
-                        {(c.other_user?.full_name?.[0] || '?').toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-noir-200 truncate">
-                      {isAI && <span className="text-rose mr-1">🤖</span>}
-                      {c.other_user?.full_name || 'Unknown'}
-                    </p>
-                    <p className="text-xs text-noir-500 truncate">
-                      {new Date(c.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </button>
-              )
-            })
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setActiveId(c.id)
+                      setShowMobileChat(true)
+                    }}
+                    className={`w-full flex items-center gap-3 p-4 border-b border-noir-800/30 hover:bg-noir-800/20 transition-colors text-left ${activeId === c.id ? 'bg-noir-800/30' : ''}`}
+                  >
+                    {/* Avatar with online dot */}
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-noir-700 flex items-center justify-center overflow-hidden">
+                        {isAI ? (
+                          <span className="text-lg">🤖</span>
+                        ) : (
+                          <span className="text-sm font-medium text-noir-200">
+                            {(c.other_user?.full_name?.[0] || '?').toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {/* Online indicator */}
+                      {!isAI && (
+                        <span
+                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-noir-900 ${
+                            online ? 'bg-emerald-400' : 'bg-noir-600'
+                          }`}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-noir-200 truncate flex items-center gap-1.5">
+                        {isAI ? (
+                          <>
+                            <span className="text-rose">🤖</span>
+                            {c.other_user?.full_name || 'Unknown'}
+                          </>
+                        ) : (
+                          c.other_user?.full_name || 'Unknown'
+                        )}
+                      </p>
+                      {/* Last active subtitle */}
+                      <p className={`text-xs truncate ${online ? 'text-emerald-400' : 'text-noir-500'}`}>
+                        {isAI ? 'Always online' : lastActive}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })
             )}
           </div>
         </div>
@@ -325,27 +384,56 @@ export default function MessagesPage() {
               <div className="flex items-center justify-between p-4 border-b border-noir-800/50">
                 <div className="flex items-center gap-3">
                   {/* Back button for mobile */}
-                  <button 
+                  <button
                     onClick={() => setShowMobileChat(false)}
                     className="md:hidden p-2 -ml-2 text-noir-400 hover:text-noir-200"
                   >
                     <ChevronLeft size={20} />
                   </button>
-                  <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
-                    {isAIConversation ? (
-                      <span className="text-sm">🤖</span>
-                    ) : (
-                      <span className="text-sm font-medium text-noir-200">
-                        {(activeConversation.other_user?.full_name?.[0] || '?').toUpperCase()}
-                      </span>
+
+                  {/* Avatar with online dot */}
+                  <div className="relative">
+                    <div className="w-9 h-9 rounded-full bg-noir-700 flex items-center justify-center">
+                      {isAIConversation ? (
+                        <span className="text-sm">🤖</span>
+                      ) : (
+                        <span className="text-sm font-medium text-noir-200">
+                          {(activeConversation.other_user?.full_name?.[0] || '?').toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    {!isAIConversation && (
+                      <span
+                        className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-noir-900 ${
+                          isOnline(activeConversation.other_user?.last_active) ? 'bg-emerald-400' : 'bg-noir-600'
+                        }`}
+                      />
                     )}
                   </div>
+
                   <div>
                     <p className="text-sm font-medium text-noir-200">
-                      {isAIConversation && <span className="text-rose mr-1">🤖</span>}
-                      {activeConversation.other_user?.full_name || 'Unknown'}
+                      {isAIConversation ? (
+                        <>
+                          <span className="text-rose mr-1">🤖</span>
+                          {activeConversation.other_user?.full_name || 'Unknown'}
+                        </>
+                      ) : (
+                        activeConversation.other_user?.full_name || 'Unknown'
+                      )}
                     </p>
-                    {isAIConversation && <p className="text-[10px] text-rose/70">AI Assistant</p>}
+                    {/* Last active or AI label */}
+                    <p className={`text-[10px] ${
+                      isAIConversation
+                        ? 'text-rose/70'
+                        : isOnline(activeConversation.other_user?.last_active)
+                          ? 'text-emerald-400'
+                          : 'text-noir-500'
+                    }`}>
+                      {isAIConversation
+                        ? 'AI Assistant'
+                        : formatLastActive(activeConversation.other_user?.last_active)}
+                    </p>
                   </div>
                 </div>
                 <button className="p-2 rounded-lg hover:bg-noir-800 text-noir-400 hover:text-noir-200 transition-colors">
