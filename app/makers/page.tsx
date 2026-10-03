@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Star, MapPin, Package, ArrowRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { getMakers } from '@/lib/data'
+import { formatLastActive, isOnline } from '@/lib/time'
 
 interface Maker {
   id: string;
@@ -16,6 +17,9 @@ interface Maker {
   products_count?: number;
   avatar_url?: string;
   cover_image_url?: string;
+  profile?: {
+    last_active?: string;
+  };
 }
 
 export default function MakersPage() {
@@ -66,6 +70,10 @@ export default function MakersPage() {
               <p className="text-sm text-noir-300 line-clamp-2 mb-4">{maker.bio || ''}</p>
               <div className="flex items-center justify-between text-xs text-noir-400">
                 <div className="flex items-center gap-4">
+                  <span className={`flex items-center gap-1 ${isOnline(maker.profile?.last_active) ? 'text-emerald-400' : ''}`}>
+                    <span className={`w-2 h-2 rounded-full ${isOnline(maker.profile?.last_active) ? 'bg-emerald-400' : 'bg-noir-600'}`} />
+                    {formatLastActive(maker.profile?.last_active)}
+                  </span>
                   <span className="flex items-center gap-1"><MapPin size={12} /> {maker.location || 'Unknown'}</span>
                   <span className="flex items-center gap-1"><Package size={12} /> {maker.products_count || 0} products</span>
                 </div>

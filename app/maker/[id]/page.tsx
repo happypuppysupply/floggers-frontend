@@ -5,6 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import FollowButton from '@/components/FollowButton';
 import MessageMakerButton from '@/components/MessageMakerButton';
 import SimilarMakers from '@/components/SimilarMakers';
+import { formatLastActive, isOnline } from '@/lib/time';
 import { Star, MapPin, Award, Calendar, Package, Users } from 'lucide-react';
 
 function isUUID(str: string) {
@@ -51,23 +52,35 @@ export default async function MakerPage({ params }: { params: { id: string } }) 
         {/* Maker Header */}
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
-            {maker.avatar_url ? (
-              <img 
-                src={maker.avatar_url} 
-                alt={maker.name} 
-                className="w-24 h-24 rounded-full object-cover border-2 border-noir-800 -mt-12 relative z-10 bg-noir-950"
+            <div className="relative -mt-12 relative z-10">
+              {maker.avatar_url ? (
+                <img 
+                  src={maker.avatar_url} 
+                  alt={maker.name} 
+                  className="w-24 h-24 rounded-full object-cover border-2 border-noir-800 bg-noir-950"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-rose-dark flex items-center justify-center text-rose text-3xl border-2 border-noir-800">
+                  {maker.name[0]}
+                </div>
+              )}
+              {/* Online indicator */}
+              <span
+                className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-noir-900 ${
+                  isOnline(maker.profile?.last_active) ? 'bg-emerald-400' : 'bg-noir-600'
+                }`}
               />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-rose-dark flex items-center justify-center text-rose text-3xl -mt-12 relative z-10 border-2 border-noir-800">
-                {maker.name[0]}
-              </div>
-            )}
+            </div>
             
             <div className="flex-1">
               <h1 className="font-serif italic text-3xl text-noir-50 mb-2">
                 {maker.name}
               </h1>
-              
+
+              <p className={`text-xs mb-2 ${isOnline(maker.profile?.last_active) ? 'text-emerald-400' : 'text-noir-500'}`}>
+                {formatLastActive(maker.profile?.last_active)}
+              </p>
+
               {maker.location && (
                 <p className="text-sm text-noir-400 flex items-center gap-1 mb-2">
                   <MapPin size={14} />

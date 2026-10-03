@@ -14,6 +14,9 @@ export interface Product {
     location?: string;
     avatar_url?: string;
     sales_count?: number;
+    profile?: {
+      last_active?: string;
+    };
   };
   rating?: number;
   sales_count?: number;
@@ -42,7 +45,7 @@ export async function getProducts(options?: { featured?: boolean; limit?: number
     .from('products')
     .select(`
       *,
-      maker:makers(name, slug, location)
+      maker:makers(name, slug, location, profile:profiles(last_active))
     `)
     .eq('is_active', true);
 
@@ -72,7 +75,7 @@ export async function getProductsByCategory(categoryId: string, excludeProductId
     .from('products')
     .select(`
       *,
-      maker:makers(name, slug, location)
+      maker:makers(name, slug, location, profile:profiles(last_active))
     `)
     .eq('is_active', true)
     .eq('category_id', categoryId)
@@ -104,7 +107,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     .from('products')
     .select(`
       *,
-      maker:makers(*),
+      maker:makers(*, profile:profiles(last_active)),
       category:categories(name, slug)
     `)
     .eq('id', id)
@@ -124,7 +127,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     .from('products')
     .select(`
       *,
-      maker:makers(*),
+      maker:makers(*, profile:profiles(last_active)),
       category:categories(name, slug)
     `)
     .eq('slug', slug)
@@ -160,7 +163,7 @@ export async function getFeaturedProducts(limit: number = 8): Promise<Product[]>
     .from('products')
     .select(`
       *,
-      maker:makers(name, slug, location)
+      maker:makers(name, slug, location, profile:profiles(last_active))
     `)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
@@ -192,7 +195,7 @@ export async function getMakers(options?: { featured?: boolean; limit?: number }
   const supabase = createClient();
   let query = supabase
     .from('makers')
-    .select('*')
+    .select('*, profile:profiles(last_active)')
     .eq('is_verified', true)
     .order('name');
 
@@ -220,7 +223,8 @@ export async function getMakerBySlug(slug: string) {
     .from('makers')
     .select(`
       *,
-      products:products(*)
+      products:products(*),
+      profile:profiles(last_active)
     `)
     .eq('slug', slug)
     .single();
@@ -239,7 +243,8 @@ export async function getMakerById(id: string) {
     .from('makers')
     .select(`
       *,
-      products:products(*)
+      products:products(*),
+      profile:profiles(last_active)
     `)
     .eq('id', id)
     .single();
@@ -553,7 +558,7 @@ export async function getProductsByMaker(makerId: string, excludeProductId?: str
     .from('products')
     .select(`
       *,
-      maker:makers(name)
+      maker:makers(name, profile:profiles(last_active))
     `)
     .eq('maker_id', makerId)
     .eq('is_active', true);
@@ -911,7 +916,7 @@ export async function getSimilarMakers(makerId: string, limit: number = 6) {
   
   let query = supabase
     .from('makers')
-    .select('id, name, slug, avatar_url, location, bio, rating, sales_count')
+    .select('id, name, slug, avatar_url, location, bio, rating, sales_count, profile:profiles(last_active)')
     .neq('id', makerId)
     .eq('is_verified', true)
     .limit(limit);

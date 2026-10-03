@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Star, MapPin, Users } from 'lucide-react'
 import { getSimilarMakers } from '@/lib/data'
+import { formatLastActive, isOnline } from '@/lib/time'
 
 interface Maker {
   id: string
@@ -14,6 +15,9 @@ interface Maker {
   bio?: string
   rating?: number
   sales_count?: number
+  profile?: {
+    last_active?: string
+  }
 }
 
 interface SimilarMakersProps {
@@ -86,29 +90,34 @@ export default function SimilarMakers({ currentMakerId }: SimilarMakersProps) {
             className="flex-shrink-0 w-64 bg-noir-900 border border-noir-800/50 rounded-xl p-4 hover:border-noir-700 transition-colors group"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-noir-800 flex items-center justify-center shrink-0 overflow-hidden">
-                {maker.avatar_url ? (
-                  <img
-                    src={maker.avatar_url}
-                    alt={maker.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-serif italic text-rose">
-                    {maker.name?.[0]?.toUpperCase()}
-                  </span>
-                )}
+              <div className="relative shrink-0">
+                <div className="w-12 h-12 rounded-full bg-noir-800 flex items-center justify-center overflow-hidden">
+                  {maker.avatar_url ? (
+                    <img
+                      src={maker.avatar_url}
+                      alt={maker.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-serif italic text-rose">
+                      {maker.name?.[0]?.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                {/* Online indicator */}
+                <span
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-noir-900 ${
+                    isOnline(maker.profile?.last_active) ? 'bg-emerald-400' : 'bg-noir-600'
+                  }`}
+                />
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-medium text-noir-100 truncate group-hover:text-rose transition-colors">
                   {maker.name}
                 </h3>
-                {maker.location && (
-                  <p className="text-xs text-noir-400 flex items-center gap-1 mt-0.5">
-                    <MapPin size={10} />
-                    {maker.location}
-                  </p>
-                )}
+                <p className={`text-xs mt-0.5 ${isOnline(maker.profile?.last_active) ? 'text-emerald-400' : 'text-noir-500'}`}>
+                  {formatLastActive(maker.profile?.last_active)}
+                </p>
               </div>
             </div>
             

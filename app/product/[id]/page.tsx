@@ -7,6 +7,7 @@ import ShippingInfo from '@/components/ShippingInfo';
 import FollowButton from '@/components/FollowButton';
 import RelatedProducts from '@/components/RelatedProducts';
 import MessageMakerButton from '@/components/MessageMakerButton';
+import { formatLastActive, isOnline } from '@/lib/time';
 import { Star, MapPin, Package, Shield, Clock, Award, Users, Store, MessageSquare } from 'lucide-react';
 
 interface PageProps {
@@ -94,17 +95,25 @@ export default async function ProductPage({ params }: PageProps) {
             
             {/* Maker Info */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-noir-900/30 border border-noir-800">
-              {product.maker?.avatar_url ? (
-                <img 
-                  src={product.maker.avatar_url} 
-                  alt="" 
-                  className="w-12 h-12 rounded-full object-cover" 
+              <div className="relative shrink-0">
+                {product.maker?.avatar_url ? (
+                  <img 
+                    src={product.maker.avatar_url} 
+                    alt="" 
+                    className="w-12 h-12 rounded-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-rose-dark flex items-center justify-center text-rose text-lg">
+                    {product.maker?.name?.[0]}
+                  </div>
+                )}
+                {/* Online indicator */}
+                <span
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-noir-900 ${
+                    isOnline(product.maker?.profile?.last_active) ? 'bg-emerald-400' : 'bg-noir-600'
+                  }`}
                 />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-rose-dark flex items-center justify-center text-rose text-lg">
-                  {product.maker?.name?.[0]}
-                </div>
-              )}
+              </div>
               <div className="flex-1 min-w-0">
                 <Link 
                   href={`/maker/${product.maker?.slug || product.maker_id}`}
@@ -113,6 +122,9 @@ export default async function ProductPage({ params }: PageProps) {
                   {product.maker?.name}
                 </Link>
                 <div className="flex items-center gap-3 mt-1">
+                  <span className={`text-xs ${isOnline(product.maker?.profile?.last_active) ? 'text-emerald-400' : 'text-noir-500'}`}>
+                    {formatLastActive(product.maker?.profile?.last_active)}
+                  </span>
                   {product.maker?.rating && (
                     <span className="text-xs text-amber-400 flex items-center gap-1">
                       <Star size={12} className="fill-amber-400" />
