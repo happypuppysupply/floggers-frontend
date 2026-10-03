@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth/AuthProvider'
-import Navbar from '@/components/Navbar'
+import ConditionalNavbar from '@/components/ConditionalNavbar'
 import ConditionalFooter from '@/components/ConditionalFooter'
 import BecomeSellerFloater from '@/components/BecomeSellerFloater'
 import MakerDashboardFloater from '@/components/MakerDashboardFloater'
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <AuthProvider>
           <ScrollToTop />
-          <Navbar />
+          <ConditionalNavbar />
           <main className="flex-1">{children}</main>
           <ConditionalFooter />
           <BecomeSellerFloater />
